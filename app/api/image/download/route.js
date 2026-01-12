@@ -89,7 +89,26 @@ export async function GET(request) {
       'image/webp': 'webp',
       'image/gif': 'gif',
     };
-    const fileExtension = extensionMap[contentType] || 'jpg';
+    
+    // First try to get extension from content-type
+    let fileExtension = extensionMap[contentType];
+    
+    // If content-type doesn't map to extension, try extracting from URL
+    if (!fileExtension) {
+      try {
+        // Extract file extension from URL path (before query parameters)
+        const urlPath = new URL(imageUrl).pathname;
+        const urlExtension = urlPath.split('.').pop()?.toLowerCase();
+        // Validate the extracted extension
+        if (urlExtension && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(urlExtension)) {
+          fileExtension = urlExtension === 'jpeg' ? 'jpg' : urlExtension;
+        } else {
+          fileExtension = 'jpg'; // Default fallback
+        }
+      } catch {
+        fileExtension = 'jpg'; // Default fallback if URL parsing fails
+      }
+    }
     
     // Sanitize image ID: remove any non-alphanumeric characters except hyphens and underscores
     // This prevents issues with special characters in filenames
@@ -99,12 +118,18 @@ export async function GET(request) {
     // Example: unsplash-abc123def456.jpg
     const filename = `${source}-${sanitizedImageId || 'image'}.${fileExtension}`;
 
+    // Determine final content-type for response
+    // Ensure we send correct content-type so browser recognizes it as an image
+    const responseContentType = contentType && contentType.startsWith('image/') 
+      ? contentType 
+      : `image/${fileExtension}`;
+
     // Return image with download headers
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         // Content type must match actual image format
-        'Content-Type': contentType,
+        'Content-Type': responseContentType,
         
         // Tell browser to download file with specific name
         // filename* is for UTF-8 encoding, filename is fallback

@@ -13,9 +13,9 @@ export default function MovieSearchBar({ onSearch, initialValue = '' }) {
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-full opacity-30 group-hover:opacity-50 blur transition duration-300" />
-        <div className="relative flex items-center bg-slate-800 rounded-full border border-slate-700 overflow-hidden">
-          <div className="pl-5 text-slate-400">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full opacity-30 group-hover:opacity-50 blur transition duration-300" />
+        <div className="relative flex items-center bg-white rounded-full border border-gray-200 overflow-hidden shadow-sm">
+          <div className="pl-5 text-gray-400">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -35,11 +35,11 @@ export default function MovieSearchBar({ onSearch, initialValue = '' }) {
             name="search"
             defaultValue={initialValue}
             placeholder="Search for movies..."
-            className="w-full px-4 py-4 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg"
+            className="w-full px-4 py-4 bg-transparent text-gray-900 placeholder-gray-400 focus:outline-none text-lg"
           />
           <button
             type="submit"
-            className="m-2 px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-red-500/25"
+            className="m-2 px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-full hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-primary-500/25"
           >
             Search
           </button>

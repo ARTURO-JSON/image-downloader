@@ -23,8 +23,8 @@ export default function MovieCategoryBar({ selectedCategory, onCategorySelect })
             onClick={() => onCategorySelect(category.value)}
             className={`px-5 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-all duration-300 ${
               selectedCategory === category.value
-                ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30'
-                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
+                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
             }`}
           >
             {category.label}

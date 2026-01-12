@@ -24,6 +24,7 @@ export default function MoviesPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch movies based on category or search
   const fetchMovies = useCallback(async (category, query, pageNum = 1, append = false) => {
@@ -54,13 +55,18 @@ export default function MoviesPage() {
         }
       }
 
+      // API returns movies, currentPage, totalPages
+      const movieResults = data.movies || data.results || [];
+      const currentPage = data.currentPage || data.page || pageNum;
+      const totalPages = data.totalPages || data.total_pages || 1;
+
       if (append) {
-        setMovies((prev) => [...prev, ...(data.results || [])]);
+        setMovies((prev) => [...prev, ...movieResults]);
       } else {
-        setMovies(data.results || []);
+        setMovies(movieResults);
       }
-      setHasMore(data.page < data.total_pages);
-      setPage(data.page);
+      setHasMore(currentPage < totalPages);
+      setPage(currentPage);
     } catch (err) {
       setError('Failed to load movies. Please try again.');
       console.error('Error fetching movies:', err);
@@ -108,44 +114,88 @@ export default function MoviesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-700/50">
+      <nav className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+          <Link href="/" className="text-2xl font-bold text-primary-600">
             ARTURO.JSX
           </Link>
-          <div className="flex gap-6">
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-6">
             <Link
               href="/"
-              className="text-slate-400 hover:text-white font-medium transition-colors"
+              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
               Images
             </Link>
             <Link
               href="/movies"
-              className="text-white font-medium"
+              className="text-primary-600 font-medium"
             >
               Movies
             </Link>
             <Link
               href="/design-assets"
-              className="text-slate-400 hover:text-white font-medium transition-colors"
+              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
               Design Assets
             </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-2">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+            >
+              Images
+            </Link>
+            <Link
+              href="/movies"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-4 py-2 rounded-lg text-primary-600 bg-primary-50 font-medium"
+            >
+              Movies
+            </Link>
+            <Link
+              href="/design-assets"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+            >
+              Design Assets
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
-      <header className="relative py-12 md:py-16">
-        <div className="absolute inset-0 bg-gradient-to-b from-red-500/10 to-transparent pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 relative">
-          <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent">
+      <header className="bg-gradient-to-b from-[#f8fbff] to-white sticky top-16 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-center mb-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
             Discover Movies
           </h1>
-          <p className="text-slate-400 text-center mb-8 text-lg">
+          <p className="text-gray-600 text-center mb-8">
             Explore trending, popular, and top-rated movies from around the world
           </p>
           <div className="max-w-2xl mx-auto">
@@ -155,7 +205,7 @@ export default function MoviesPage() {
       </header>
 
       {/* Category Bar */}
-      <div className="sticky top-[73px] z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-700/50 py-4">
+      <div className="sticky top-16 z-30 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 py-4">
         <div className="max-w-7xl mx-auto px-4">
           <MovieCategoryBar
             selectedCategory={selectedCategory}
@@ -169,16 +219,16 @@ export default function MoviesPage() {
         {/* Search Results Header */}
         {searchQuery && (
           <div className="mb-6">
-            <h2 className="text-xl text-slate-300">
-              Search results for: <span className="text-white font-semibold">"{searchQuery}"</span>
+            <h2 className="text-xl text-gray-700">
+              Search results for: <span className="text-gray-900 font-semibold">"{searchQuery}"</span>
             </h2>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-            <p className="text-red-400">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600">{error}</p>
           </div>
         )}
 
@@ -195,7 +245,7 @@ export default function MoviesPage() {
             <button
               onClick={handleLoadMore}
               disabled={loadingMore}
-              className="px-8 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-red-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-full hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingMore ? (
                 <span className="flex items-center gap-2">
@@ -216,8 +266,8 @@ export default function MoviesPage() {
         {!loading && movies.length === 0 && !error && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🎬</div>
-            <h3 className="text-xl font-semibold text-white mb-2">No movies found</h3>
-            <p className="text-slate-400">Try a different search term or category</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No movies found</h3>
+            <p className="text-gray-600">Try a different search term or category</p>
           </div>
         )}
       </main>

@@ -9,7 +9,7 @@ export default function MovieGrid({ movies, onMovieClick, isLoading }) {
         {Array.from({ length: 18 }).map((_, idx) => (
           <div
             key={idx}
-            className="aspect-[2/3] bg-slate-700/50 rounded-xl animate-pulse"
+            className="aspect-[2/3] bg-gray-200 rounded-xl animate-pulse"
           />
         ))}
       </div>
@@ -20,7 +20,7 @@ export default function MovieGrid({ movies, onMovieClick, isLoading }) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="text-6xl mb-4">🎬</div>
-        <p className="text-slate-400 text-lg">No movies found</p>
+        <p className="text-gray-600 text-lg">No movies found</p>
       </div>
     );
   }

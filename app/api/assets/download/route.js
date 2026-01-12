@@ -58,18 +58,28 @@ export async function GET(request) {
 async function getPixabayDownloadUrl(pixabayId, format) {
   try {
     const apiKey = process.env.PIXABAY_API_KEY;
+    if (!apiKey) {
+      console.error('Pixabay API key not configured');
+      return null;
+    }
+    
     const url = `https://pixabay.com/api/?key=${apiKey}&id=${pixabayId}`;
 
     const response = await fetch(url);
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Pixabay API error: ${response.status}`);
+      return null;
+    }
 
     const data = await response.json();
     const item = data.hits?.[0];
 
     if (!item) return null;
 
-    // Return the image URL - Pixabay allows direct downloads
-    return item.imageURL;
+    // Return the best available URL
+    // imageURL requires paid API, largeImageURL is available on free tier
+    // webformatURL is smaller but always available
+    return item.largeImageURL || item.webformatURL || item.previewURL;
   } catch (err) {
     console.error('Pixabay download error:', err);
     return null;

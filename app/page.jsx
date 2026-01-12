@@ -254,64 +254,148 @@ export default function Home() {
         ) : images.length > 0 ? (
           <>
             {/* Selection Controls */}
-            <div className="bg-zinc-800 rounded-lg p-6 border border-zinc-700 flex justify-between items-center">
-              <div className="text-white">
-                Selected: <span className="font-bold">{selectedImages.size}</span> /{' '}
-                <span className="font-bold">{images.length}</span>
+            <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="text-gray-800">
+                  <span className="text-gray-500 text-sm">Selected:</span>{' '}
+                  <span className="font-bold text-xl text-primary-500">{selectedImages.size}</span>
+                  <span className="text-gray-400 mx-1">/</span>
+                  <span className="font-medium text-gray-600">{images.length}</span>
+                </div>
               </div>
-              <div className="space-x-4">
+              <div className="flex gap-3">
                 <button
                   onClick={handleSelectAll}
-                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded transition"
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 flex items-center gap-2 font-medium border border-gray-200"
                 >
-                  {selectedImages.size === images.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                  {selectedImages.size === images.length ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Deselect All
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Select All
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleDownloadAll}
                   disabled={selectedImages.size === 0 || downloading}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition"
+                  className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg shadow-green-500/25 disabled:shadow-none"
                 >
-                  {downloading ? 'Downloading...' : 'Download Selected'}
+                  {downloading ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Selected
+                    </>
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Images Gallery */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-6">
               {images.map((imageUrl, index) => (
                 <div
                   key={index}
-                  className="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 hover:border-blue-500 transition"
+                  className={`group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 ${
+                    selectedImages.has(index) ? 'ring-4 ring-primary-500 ring-offset-2' : ''
+                  }`}
                 >
-                  <div className="relative w-full h-48">
+                  {/* Image Container */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={`Image ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         e.target.src = '/placeholder.png';
                       }}
                     />
+                    
+                    {/* Selection Checkbox - Always visible in corner */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <label className="cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedImages.has(index)}
+                          onChange={() => handleSelectImage(index)}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                          selectedImages.has(index) 
+                            ? 'bg-primary-500 border-primary-500' 
+                            : 'bg-white/80 border-gray-300 hover:border-primary-400'
+                        }`}>
+                          {selectedImages.has(index) && (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Gradient Overlay on Hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    
+                    {/* Quick Download Button - Shows on hover */}
+                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(imageUrl);
+                        }}
+                        className="p-2.5 bg-white rounded-full shadow-lg hover:bg-primary-500 hover:text-white transition-colors duration-200"
+                        title="Download"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Image Number Badge */}
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="px-2 py-1 bg-black/50 backdrop-blur-sm text-white text-xs font-medium rounded-full">
+                        #{index + 1}
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-4 space-y-3">
+
+                  {/* Card Footer */}
+                  <div className="p-3 bg-gradient-to-b from-gray-50 to-white">
                     <button
                       onClick={() => handleDownload(imageUrl)}
-                      className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition text-sm"
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                     >
-                      Download
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download HD
                     </button>
-                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedImages.has(index)}
-                        onChange={() => handleSelectImage(index)}
-                        className="w-4 h-4 rounded"
-                      />
-                      <span>Select for bulk download</span>
-                    </label>
                   </div>
                 </div>
               ))}

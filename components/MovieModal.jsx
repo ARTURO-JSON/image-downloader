@@ -3,13 +3,6 @@
 import { useEffect } from 'react';
 import Image from 'next/image';
 
-const downloadQualities = [
-  { quality: '360p', size: '500MB', icon: '📱' },
-  { quality: '480p', size: '750MB', icon: '💻' },
-  { quality: '720p', size: '1.2GB', icon: '🖥️' },
-  { quality: '1080p', size: '2.5GB', icon: '📺' },
-];
-
 export default function MovieModal({ movie, isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
@@ -42,10 +35,6 @@ export default function MovieModal({ movie, isOpen, onClose }) {
 
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A';
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
-
-  const handleDownload = (quality) => {
-    alert(`Download simulated for ${movie.title} - ${quality}\n\nNote: This is a demo. Real content download would require proper licensing.`);
-  };
 
   return (
     <>
@@ -133,45 +122,27 @@ export default function MovieModal({ movie, isOpen, onClose }) {
                 {movie.overview || 'No description available for this movie.'}
               </p>
 
-              {/* Download Section */}
+              {/* Download Section - Coming Soon */}
               <div className="mt-auto">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                  Select Quality
-                </h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {downloadQualities.map((item) => (
-                    <button
-                      key={item.quality}
-                      onClick={() => handleDownload(item.quality)}
-                      className="group px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl hover:border-primary-500 hover:bg-primary-50 transition-all duration-200"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
-                            {item.quality}
-                          </div>
-                          <div className="text-xs text-gray-500">{item.size}</div>
-                        </div>
-                        <span className="text-xl">{item.icon}</span>
-                      </div>
-                    </button>
-                  ))}
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 text-center">
+                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    Download Coming Soon
+                  </h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    Downloading movies is not available now. This feature will be added soon!
+                  </p>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-primary-500">
+                    <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium">Stay tuned for updates</span>
+                  </div>
                 </div>
-
-                {/* Main Download Button */}
-                <button
-                  onClick={() => handleDownload('1080p')}
-                  className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download Best Quality (1080p)
-                </button>
-
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  Demo only • Real downloads require proper licensing
-                </p>
               </div>
             </div>
           </div>

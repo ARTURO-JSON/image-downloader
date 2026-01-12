@@ -186,7 +186,7 @@ export default function DesignAssetsPage() {
       </nav>
 
       {/* Hero Header */}
-      <header className="bg-gradient-to-b from-[#f8fbff] to-white sticky top-16 z-40 shadow-sm">
+      <header className="bg-gradient-to-b from-[#f8fbff] to-white">
         <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-center mb-2 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
             Design Assets Library
@@ -206,7 +206,7 @@ export default function DesignAssetsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}
           <aside className="lg:col-span-1">
-            <div className="sticky top-32 bg-white rounded-xl shadow-md p-6">
+            <div className="sticky top-24 bg-white rounded-xl shadow-md p-6">
               <AssetFilters
                 selectedType={assetType}
                 selectedCategory={category}

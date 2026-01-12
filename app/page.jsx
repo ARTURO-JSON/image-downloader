@@ -1,215 +1,225 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import SearchBar from '@/components/SearchBar';
-import CategoryBar from '@/components/CategoryBar';
-import SourceSelector from '@/components/SourceSelector';
-import ImageGrid from '@/components/ImageGrid';
-import ImageModal from '@/components/ImageModal';
-import { fetchImages } from '@/lib/fetchImages';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import axios from 'axios';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import Navigation from '@/components/Navigation';
 
 export default function Home() {
+  const [input, setInput] = useState('');
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('nature');
-  const [selectedCategory, setSelectedCategory] = useState('nature');
-  const [selectedSource, setSelectedSource] = useState('unsplash');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedImages, setSelectedImages] = useState(new Set());
+  const [downloading, setDownloading] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Initial load and when search/category/source changes
-  useEffect(() => {
-    loadImages(searchQuery, 1, true);
-  }, [searchQuery, selectedSource]);
-
-  const loadImages = async (query, page, reset = false) => {
+  const fetchImages = async (url) => {
+    setLoading(true);
+    setError('');
     try {
-      if (reset) {
-        setLoading(true);
-        setError(null);
-      } else {
-        setIsLoadingMore(true);
+      const response = await axios.post('/api/download', { url });
+      setImages(response.data.images || []);
+      if (!response.data.images || response.data.images.length === 0) {
+        setError('No images found');
       }
-
-      const data = await fetchImages(query, page, 20, selectedSource);
-
-      if (reset) {
-        setImages(data.images);
-      } else {
-        setImages((prev) => [...prev, ...data.images]);
-      }
-
-      setCurrentPage(data.currentPage);
-      setTotalPages(data.totalPages);
     } catch (err) {
-      setError(err.message || 'Failed to load images');
-      console.error('Error loading images:', err);
+      setError(err.response?.data?.error || 'Error fetching images');
     } finally {
       setLoading(false);
-      setIsLoadingMore(false);
     }
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setSelectedCategory('');
-    setCurrentPage(1);
-  };
-
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category);
-    setSearchQuery(category);
-    setCurrentPage(1);
-  };
-
-  const handleSourceChange = (source) => {
-    setSelectedSource(source);
-    setCurrentPage(1);
-  };
-
-  const handleLoadMore = () => {
-    if (!isLoadingMore && currentPage < totalPages) {
-      loadImages(searchQuery, currentPage + 1, false);
+  const handleDownload = async (imageUrl) => {
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', imageUrl.split('/').pop() || 'image');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
     }
   };
 
-  const handleImageClick = (image) => {
-    setSelectedImage(image);
+  const handleSelectImage = (index) => {
+    const newSelected = new Set(selectedImages);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedImages(newSelected);
   };
 
-  const handleCloseModal = () => {
-    setSelectedImage(null);
+  const handleSelectAll = () => {
+    if (selectedImages.size === images.length) {
+      setSelectedImages(new Set());
+    } else {
+      setSelectedImages(new Set(images.map((_, i) => i)));
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (selectedImages.size === 0) {
+      setError('Please select at least one image');
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const zip = new JSZip();
+      const selectedImageUrls = Array.from(selectedImages).map(
+        (index) => images[index]
+      );
+
+      for (let i = 0; i < selectedImageUrls.length; i++) {
+        const imageUrl = selectedImageUrls[i];
+        try {
+          const response = await axios.get(imageUrl, {
+            responseType: 'blob',
+          });
+          zip.file(`image_${i + 1}.jpg`, response.data);
+        } catch (err) {
+          console.error(`Error downloading image ${i + 1}:`, err);
+        }
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, 'images.zip');
+    } catch (err) {
+      setError('Error creating zip file');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary-600">
-            ARTURO.JSX 
-          </Link>
-          <div className="flex gap-6">
-            <Link
-              href="/"
-              className="text-primary-600 font-medium"
-            >
-              Images
-            </Link>
-            <Link
-              href="/movies"
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
-            >
-              Movies
-            </Link>
-            <Link
-              href="/design-assets"
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
-            >
-              Design Assets
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
+      <Navigation />
 
-      {/* Header with Gradient Background */}
-      <header className="bg-gradient-to-b from-[#f8fbff] to-white sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-white mb-4">
             Image Downloader
           </h1>
-          <div className="max-w-2xl mx-auto mb-6">
-            <SearchBar onSearch={handleSearch} initialValue={searchQuery} />
-          </div>
-          <div className="flex justify-center">
-            <SourceSelector
-              selectedSource={selectedSource}
-              onSourceChange={handleSourceChange}
+          <p className="text-gray-400 text-lg">
+            Extract and download images from any website
+          </p>
+        </div>
+
+        <div className="space-y-8">
+          {/* Input Section */}
+          <div className="bg-zinc-800 rounded-lg p-8 border border-zinc-700">
+            <label className="block text-white text-lg font-semibold mb-4">
+              Enter Website URL
+            </label>
+            <input
+              type="url"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  fetchImages(input);
+                }
+              }}
+              placeholder="https://example.com"
+              className="w-full px-4 py-3 bg-zinc-700 border border-zinc-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition"
             />
-          </div>
-        </div>
-      </header>
-
-      {/* Category Bar - Sticky */}
-      <div className="sticky top-16 z-30 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <CategoryBar
-            selectedCategory={selectedCategory}
-            onCategorySelect={handleCategorySelect}
-          />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-4"></div>
-              <p className="text-gray-600">Loading images...</p>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500 text-lg mb-4">{error}</p>
             <button
-              onClick={() => loadImages(searchQuery, 1, true)}
-              className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              onClick={() => fetchImages(input)}
+              disabled={loading}
+              className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold rounded transition w-full"
             >
-              Try Again
+              {loading ? 'Fetching Images...' : 'Fetch Images'}
             </button>
           </div>
-        ) : (
-          <>
-            <ImageGrid images={images} onImageClick={handleImageClick} />
 
-            {/* Load More Button */}
-            {currentPage < totalPages && (
-              <div className="flex justify-center mt-12">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                  className="px-8 py-3 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      Load More
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </>
-                  )}
-                </button>
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-900 border border-red-700 text-red-200 px-6 py-4 rounded">
+              {error}
+            </div>
+          )}
+
+          {/* Images Grid */}
+          {images.length > 0 && (
+            <>
+              {/* Selection Controls */}
+              <div className="bg-zinc-800 rounded-lg p-6 border border-zinc-700 flex justify-between items-center">
+                <div className="text-white">
+                  Selected: <span className="font-bold">{selectedImages.size}</span> /{' '}
+                  <span className="font-bold">{images.length}</span>
+                </div>
+                <div className="space-x-4">
+                  <button
+                    onClick={handleSelectAll}
+                    className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded transition"
+                  >
+                    {selectedImages.size === images.length
+                      ? 'Deselect All'
+                      : 'Select All'}
+                  </button>
+                  <button
+                    onClick={handleDownloadAll}
+                    disabled={selectedImages.size === 0 || downloading}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition"
+                  >
+                    {downloading ? 'Downloading...' : 'Download Selected'}
+                  </button>
+                </div>
               </div>
-            )}
-          </>
-        )}
-      </main>
 
-      {/* Image Modal */}
-      {selectedImage && (
-        <ImageModal image={selectedImage} onClose={handleCloseModal} />
-      )}
-    </div>
+              {/* Images Gallery */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {images.map((imageUrl, index) => (
+                  <div
+                    key={index}
+                    className="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 hover:border-blue-500 transition"
+                  >
+                    <div className="relative w-full h-48">
+                      <Image
+                        src={imageUrl}
+                        alt={`Image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          e.target.src = '/placeholder.png';
+                        }}
+                      />
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <button
+                        onClick={() => handleDownload(imageUrl)}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition text-sm"
+                      >
+                        Download
+                      </button>
+                      <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedImages.has(index)}
+                          onChange={() => handleSelectImage(index)}
+                          className="w-4 h-4 rounded"
+                        />
+                        <span>Select for bulk download</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
-

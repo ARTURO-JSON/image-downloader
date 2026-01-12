@@ -33,6 +33,7 @@ export async function GET(request) {
     const imageUrl = searchParams.get('url');
     const imageId = searchParams.get('id');
     const source = searchParams.get('source') || 'unsplash';
+    // Note: 't' parameter is used by client to prevent browser filename inference
 
     // Validate required parameters
     if (!imageUrl) {
@@ -132,8 +133,8 @@ export async function GET(request) {
         'Content-Type': responseContentType,
         
         // Tell browser to download file with specific name
-        // filename* is for UTF-8 encoding, filename is fallback
-        'Content-Disposition': `attachment; filename*=UTF-8''${filename}; filename="${filename}"`,
+        // Use simple filename parameter (not filename* with UTF-8) for broader compatibility
+        'Content-Disposition': `attachment; filename="${filename}"`,
         
         // File size in bytes
         'Content-Length': buffer.byteLength.toString(),

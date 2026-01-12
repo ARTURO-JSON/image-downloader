@@ -30,15 +30,26 @@ export async function GET(request) {
   try {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const imageUrl = searchParams.get('url');
+    const encodedUrl = searchParams.get('url');  // Base64-encoded image URL
     const imageId = searchParams.get('id');
     const source = searchParams.get('source') || 'unsplash';
-    // Note: 't' parameter is used by client to prevent browser filename inference
 
     // Validate required parameters
-    if (!imageUrl) {
+    if (!encodedUrl) {
       return NextResponse.json(
         { error: 'url parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Decode the Base64-encoded URL
+    let imageUrl;
+    try {
+      imageUrl = atob(encodedUrl);
+    } catch (decodeError) {
+      console.error('Failed to decode URL:', decodeError);
+      return NextResponse.json(
+        { error: 'Invalid URL encoding' },
         { status: 400 }
       );
     }

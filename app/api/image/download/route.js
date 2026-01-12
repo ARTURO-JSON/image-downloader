@@ -93,58 +93,42 @@ export async function GET(request) {
       contentType = contentType.split(';')[0].trim();
     }
 
-    // Map content type to file extension
-    const extensionMap = {
-      'image/jpeg': 'jpg',
-      'image/jpg': 'jpg',
-      'image/png': 'png',
-      'image/webp': 'webp',
-      'image/gif': 'gif',
-    };
+    // Normalize content type and determine file extension
+    // Map all variations to standard formats
+    let fileExtension = 'jpg';  // Default to jpg
+    let finalContentType = 'image/jpeg';  // Default content type
     
-    // First try to get extension from content-type
-    let fileExtension = extensionMap[contentType];
-    
-    // If content-type doesn't map to extension, try extracting from URL
-    if (!fileExtension) {
-      try {
-        // Extract file extension from URL path (before query parameters)
-        const urlPath = new URL(imageUrl).pathname;
-        const urlExtension = urlPath.split('.').pop()?.toLowerCase();
-        // Validate the extracted extension
-        if (urlExtension && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(urlExtension)) {
-          fileExtension = urlExtension === 'jpeg' ? 'jpg' : urlExtension;
-        } else {
-          fileExtension = 'jpg'; // Default fallback
-        }
-      } catch {
-        fileExtension = 'jpg'; // Default fallback if URL parsing fails
-      }
+    if (contentType.includes('png')) {
+      fileExtension = 'png';
+      finalContentType = 'image/png';
+    } else if (contentType.includes('webp')) {
+      fileExtension = 'webp';
+      finalContentType = 'image/webp';
+    } else if (contentType.includes('gif')) {
+      fileExtension = 'gif';
+      finalContentType = 'image/gif';
+    } else {
+      // All other image types (jpeg, jpg, or unknown) default to jpg
+      fileExtension = 'jpg';
+      finalContentType = 'image/jpeg';
     }
     
     // Sanitize image ID: remove any non-alphanumeric characters except hyphens and underscores
     // This prevents issues with special characters in filenames
     const sanitizedImageId = imageId.replace(/[^a-zA-Z0-9_-]/g, '');
     
-    // Build filename: source-imageId.extension
-    // Example: unsplash-abc123def456.jpg
+    // Build clean filename: source-imageId.extension
+    // Example: unsplash-photo-1509316975850.jpg
     const filename = `${source}-${sanitizedImageId || 'image'}.${fileExtension}`;
-
-    // Determine final content-type for response
-    // Ensure we send correct content-type so browser recognizes it as an image
-    const responseContentType = contentType && contentType.startsWith('image/') 
-      ? contentType 
-      : `image/${fileExtension}`;
 
     // Return image with download headers
     return new NextResponse(buffer, {
       status: 200,
       headers: {
-        // Content type must match actual image format
-        'Content-Type': responseContentType,
+        // Always send correct content type based on actual format
+        'Content-Type': finalContentType,
         
         // Tell browser to download file with specific name
-        // Use simple filename parameter (not filename* with UTF-8) for broader compatibility
         'Content-Disposition': `attachment; filename="${filename}"`,
         
         // File size in bytes

@@ -170,95 +170,78 @@ export default function Home() {
               <p className="text-gray-600">Loading images...</p>
             </div>
           </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500 text-lg mb-4">{error}</p>
-            <button
-              onClick={() => fetchImages(input)}
-              disabled={loading}
-              className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold rounded transition w-full"
-            >
-              {loading ? 'Fetching Images...' : 'Fetch Images'}
-            </button>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-900 border border-red-700 text-red-200 px-6 py-4 rounded">
-              {error}
+        ) : images.length > 0 ? (
+          <>
+            {/* Selection Controls */}
+            <div className="bg-zinc-800 rounded-lg p-6 border border-zinc-700 flex justify-between items-center">
+              <div className="text-white">
+                Selected: <span className="font-bold">{selectedImages.size}</span> /{' '}
+                <span className="font-bold">{images.length}</span>
+              </div>
+              <div className="space-x-4">
+                <button
+                  onClick={handleSelectAll}
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded transition"
+                >
+                  {selectedImages.size === images.length
+                    ? 'Deselect All'
+                    : 'Select All'}
+                </button>
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={selectedImages.size === 0 || downloading}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition"
+                >
+                  {downloading ? 'Downloading...' : 'Download Selected'}
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Images Grid */}
-          {images.length > 0 && (
-            <>
-              {/* Selection Controls */}
-              <div className="bg-zinc-800 rounded-lg p-6 border border-zinc-700 flex justify-between items-center">
-                <div className="text-white">
-                  Selected: <span className="font-bold">{selectedImages.size}</span> /{' '}
-                  <span className="font-bold">{images.length}</span>
-                </div>
-                <div className="space-x-4">
-                  <button
-                    onClick={handleSelectAll}
-                    className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded transition"
-                  >
-                    {selectedImages.size === images.length
-                      ? 'Deselect All'
-                      : 'Select All'}
-                  </button>
-                  <button
-                    onClick={handleDownloadAll}
-                    disabled={selectedImages.size === 0 || downloading}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition"
-                  >
-                    {downloading ? 'Downloading...' : 'Download Selected'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Images Gallery */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {images.map((imageUrl, index) => (
-                  <div
-                    key={index}
-                    className="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 hover:border-blue-500 transition"
-                  >
-                    <div className="relative w-full h-48">
-                      <Image
-                        src={imageUrl}
-                        alt={`Image ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          e.target.src = '/placeholder.png';
-                        }}
-                      />
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <button
-                        onClick={() => handleDownload(imageUrl)}
-                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition text-sm"
-                      >
-                        Download
-                      </button>
-                      <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedImages.has(index)}
-                          onChange={() => handleSelectImage(index)}
-                          className="w-4 h-4 rounded"
-                        />
-                        <span>Select for bulk download</span>
-                      </label>
-                    </div>
+            {/* Images Gallery */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {images.map((imageUrl, index) => (
+                <div
+                  key={index}
+                  className="bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 hover:border-blue-500 transition"
+                >
+                  <div className="relative w-full h-48">
+                    <Image
+                      src={imageUrl}
+                      alt={`Image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      onError={(e) => {
+                        e.target.src = '/placeholder.png';
+                      }}
+                    />
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </main>
+                  <div className="p-4 space-y-3">
+                    <button
+                      onClick={() => handleDownload(imageUrl)}
+                      className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition text-sm"
+                    >
+                      Download
+                    </button>
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedImages.has(index)}
+                        onChange={() => handleSelectImage(index)}
+                        className="w-4 h-4 rounded"
+                      />
+                      <span>Select for bulk download</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-20">
+            <p className="text-gray-600">No images found</p>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

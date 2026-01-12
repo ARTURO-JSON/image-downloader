@@ -4,10 +4,10 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 
 const downloadQualities = [
-  { quality: '360p', bitrate: '500MB' },
-  { quality: '480p', bitrate: '750MB' },
-  { quality: '720p', bitrate: '1.2GB' },
-  { quality: '1080p', bitrate: '2.5GB' },
+  { quality: '360p', size: '500MB', icon: '📱' },
+  { quality: '480p', size: '750MB', icon: '💻' },
+  { quality: '720p', size: '1.2GB', icon: '🖥️' },
+  { quality: '1080p', size: '2.5GB', icon: '📺' },
 ];
 
 export default function MovieModal({ movie, isOpen, onClose }) {
@@ -22,45 +22,65 @@ export default function MovieModal({ movie, isOpen, onClose }) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   if (!isOpen || !movie) return null;
 
   const posterUrl = movie.poster_path
-    ? `${process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL}${movie.poster_path}`
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : '/movie-placeholder.svg';
+
+  const backdropUrl = movie.backdrop_path
+    ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+    : null;
 
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A';
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
 
   const handleDownload = (quality) => {
-    // Simulated download - placeholder link
-    const link = document.createElement('a');
-    link.href = `#download-${movie.id}-${quality}`;
-    link.download = `${movie.title}-${quality}.mp4`;
-    // In a real app, this would link to actual content
-    alert(`Download simulated for ${movie.title} - ${quality}\n\nNote: This is a placeholder. Real content download would happen here.`);
+    alert(`Download simulated for ${movie.title} - ${quality}\n\nNote: This is a demo. Real content download would require proper licensing.`);
   };
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 transition-opacity duration-300"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div
-          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 animate-fadeIn"
+          className="relative bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fadeIn"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Backdrop Image */}
+          {backdropUrl && (
+            <div className="absolute inset-0 opacity-20">
+              <Image
+                src={backdropUrl}
+                alt=""
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-slate-900/60" />
+            </div>
+          )}
+
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors duration-200"
+            className="absolute top-4 right-4 z-20 p-2 bg-slate-800/80 hover:bg-slate-700 rounded-full transition-colors duration-200 backdrop-blur-sm"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
+              className="w-6 h-6 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -74,90 +94,85 @@ export default function MovieModal({ movie, isOpen, onClose }) {
             </svg>
           </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 md:p-8">
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-5 gap-6 p-6 md:p-8 overflow-y-auto max-h-[90vh]">
             {/* Left side - Poster */}
-            <div className="flex flex-col items-center">
-              <div className="relative w-full max-w-sm aspect-[2/3] rounded-lg overflow-hidden shadow-lg mb-6">
+            <div className="md:col-span-2 flex flex-col items-center">
+              <div className="relative w-full max-w-xs aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/10">
                 <Image
                   src={posterUrl}
                   alt={movie.title}
                   fill
                   className="object-cover"
                   priority
-                  onError={(e) => {
-                    e.target.src = '/movie-placeholder.svg';
-                  }}
                 />
               </div>
             </div>
 
             {/* Right side - Details */}
-            <div className="flex flex-col">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">{movie.title}</h2>
+            <div className="md:col-span-3 flex flex-col">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">{movie.title}</h2>
 
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  <svg className="w-5 h-5 fill-yellow-400" viewBox="0 0 20 20">
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/20 rounded-full">
+                  <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
                     <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                   </svg>
-                  <span className="text-lg font-semibold text-gray-900">{rating}</span>
+                  <span className="text-yellow-400 font-bold">{rating}</span>
                 </div>
-                <span className="text-gray-600">|</span>
-                <span className="text-gray-600">{releaseYear}</span>
+                <span className="text-slate-400">•</span>
+                <span className="text-slate-400">{releaseYear}</span>
+                {movie.runtime && (
+                  <>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-400">{movie.runtime} min</span>
+                  </>
+                )}
               </div>
 
-              <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                {movie.overview || 'No description available'}
+              <p className="text-slate-300 text-sm leading-relaxed mb-6 line-clamp-4 md:line-clamp-none">
+                {movie.overview || 'No description available for this movie.'}
               </p>
 
-              {movie.genres && movie.genres.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">Genres</p>
-                  <div className="flex flex-wrap gap-2">
-                    {movie.genres.map((genre) => (
-                      <span
-                        key={genre.id}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full"
-                      >
-                        {genre.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Download Quality Selection */}
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-900 mb-3">
-                  Select Download Quality
-                </p>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Download Section */}
+              <div className="mt-auto">
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  Select Quality
+                </h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   {downloadQualities.map((item) => (
                     <button
                       key={item.quality}
                       onClick={() => handleDownload(item.quality)}
-                      className="px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 text-center"
+                      className="group px-4 py-3 bg-slate-800/80 border border-slate-700 rounded-xl hover:border-red-500 hover:bg-slate-800 transition-all duration-200"
                     >
-                      <div className="font-semibold text-gray-900">
-                        {item.quality}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-white group-hover:text-red-400 transition-colors">
+                            {item.quality}
+                          </div>
+                          <div className="text-xs text-slate-500">{item.size}</div>
+                        </div>
+                        <span className="text-xl">{item.icon}</span>
                       </div>
-                      <div className="text-xs text-gray-500">{item.bitrate}</div>
                     </button>
                   ))}
                 </div>
+
+                {/* Main Download Button */}
+                <button
+                  onClick={() => handleDownload('1080p')}
+                  className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download Best Quality (1080p)
+                </button>
+
+                <p className="text-xs text-slate-500 text-center mt-3">
+                  Demo only • Real downloads require proper licensing
+                </p>
               </div>
-
-              {/* Download Now Button */}
-              <button
-                onClick={() => handleDownload('720p')}
-                className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Download Now (720p)
-              </button>
-
-              <p className="text-xs text-gray-500 text-center mt-3">
-                This is a simulated download. Educational purposes only.
-              </p>
             </div>
           </div>
         </div>

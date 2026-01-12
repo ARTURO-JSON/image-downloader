@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 /**
- * Download asset - returns redirect URL
+ * Download asset - fetches and returns the file with download headers
  * GET /api/assets/download?id=...&source=...&format=...
  */
 export async function GET(request) {
@@ -21,6 +21,7 @@ export async function GET(request) {
     }
 
     let downloadUrl = null;
+    let filename = `${source}-${assetId}.${format}`;
 
     if (source === 'pixabay') {
       downloadUrl = await getPixabayDownloadUrl(assetId, format);
@@ -39,8 +40,41 @@ export async function GET(request) {
       );
     }
 
-    // Redirect to the actual download URL
-    return NextResponse.redirect(downloadUrl);
+    // Fetch the actual image file
+    const imageResponse = await fetch(downloadUrl);
+    if (!imageResponse.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch image' },
+        { status: 500 }
+      );
+    }
+
+    // Get the image data as buffer
+    const imageBuffer = await imageResponse.arrayBuffer();
+    
+    // Determine content type
+    const contentType = imageResponse.headers.get('content-type') || `image/${format}`;
+    
+    // Extract extension from content type if possible
+    const extMap = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/svg+xml': 'svg',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+    };
+    const ext = extMap[contentType] || format;
+    filename = `${source}-${assetId}.${ext}`;
+
+    // Return the image with download headers
+    return new NextResponse(imageBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': imageBuffer.byteLength.toString(),
+      },
+    });
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(

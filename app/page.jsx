@@ -30,9 +30,11 @@ export default function Home() {
     setError('');
     try {
       const response = await axios.get(`/api/search?query=${encodeURIComponent(query)}&source=${source}&perPage=30`);
-      const imageUrls = response.data.images?.map(img => img.url) || [];
-      setImages(imageUrls);
-      if (imageUrls.length === 0) {
+      // Store the full image objects (with id, full, url, source, photographer, etc.)
+      // NOT just the URLs
+      const fullImages = response.data.images || [];
+      setImages(fullImages);
+      if (fullImages.length === 0) {
         setError('No images found');
       }
     } catch (err) {
@@ -63,21 +65,19 @@ export default function Home() {
     fetchImagesFromAPI(category, selectedSource);
   };
 
-  const handleDownload = async (imageUrl) => {
+  const handleDownload = async (imageObj) => {
+    // Use the new downloadImage utility that handles the server proxy
+    const { downloadImage } = await import('@/lib/downloadImage');
+    
     try {
-      const response = await axios.get(imageUrl, {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', imageUrl.split('/').pop() || 'image');
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      downloadImage(
+        imageObj.full || imageObj.url,
+        imageObj.id,
+        imageObj.source || 'unsplash'
+      );
     } catch (err) {
       console.error('Download error:', err);
+      setError('Error downloading image');
     }
   };
 
@@ -108,17 +108,20 @@ export default function Home() {
     setDownloading(true);
     try {
       const zip = new JSZip();
-      const selectedImageUrls = Array.from(selectedImages).map(
+      const selectedImageObjects = Array.from(selectedImages).map(
         (index) => images[index]
       );
 
-      for (let i = 0; i < selectedImageUrls.length; i++) {
-        const imageUrl = selectedImageUrls[i];
+      for (let i = 0; i < selectedImageObjects.length; i++) {
+        const imageObj = selectedImageObjects[i];
         try {
-          const response = await axios.get(imageUrl, {
+          // Download the full resolution image
+          const response = await axios.get(imageObj.full || imageObj.url, {
             responseType: 'blob',
           });
-          zip.file(`image_${i + 1}.jpg`, response.data);
+          // Use the image ID or a fallback name
+          const filename = `${imageObj.source || 'image'}-${imageObj.id || i + 1}.jpg`;
+          zip.file(filename, response.data);
         } catch (err) {
           console.error(`Error downloading image ${i + 1}:`, err);
         }
@@ -316,7 +319,7 @@ export default function Home() {
 
             {/* Images Gallery */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-6">
-              {images.map((imageUrl, index) => (
+              {images.map((imageObj, index) => (
                 <div
                   key={index}
                   className={`group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 ${
@@ -326,8 +329,8 @@ export default function Home() {
                   {/* Image Container */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <Image
-                      src={imageUrl}
-                      alt={`Image ${index + 1}`}
+                      src={imageObj.thumb || imageObj.url}
+                      alt={imageObj.description || `Image ${index + 1}`}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
@@ -366,7 +369,7 @@ export default function Home() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDownload(imageUrl);
+                          handleDownload(imageObj);
                         }}
                         className="p-2.5 bg-white rounded-full shadow-lg hover:bg-primary-500 hover:text-white transition-colors duration-200"
                         title="Download"
@@ -388,7 +391,7 @@ export default function Home() {
                   {/* Card Footer */}
                   <div className="p-3 bg-gradient-to-b from-gray-50 to-white">
                     <button
-                      onClick={() => handleDownload(imageUrl)}
+                      onClick={() => handleDownload(imageObj)}
                       className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,6 +18,9 @@ export default function Home() {
   const [error, setError] = useState('');
   const [selectedImages, setSelectedImages] = useState(new Set());
   const [downloading, setDownloading] = useState(false);
+  const [selectedSource, setSelectedSource] = useState('unsplash');
+  const [searchQuery, setSearchQuery] = useState('nature');
+  const [selectedCategory, setSelectedCategory] = useState('nature');
   const fileInputRef = useRef(null);
 
   const fetchImages = async (url) => {
@@ -34,6 +37,23 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setInput(query);
+    fetchImages(query);
+  };
+
+  const handleSourceChange = (source) => {
+    setSelectedSource(source);
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setSearchQuery(category);
+    setInput(category);
+    fetchImages(category);
   };
 
   const handleDownload = async (imageUrl) => {

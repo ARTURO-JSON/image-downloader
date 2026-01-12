@@ -44,11 +44,11 @@ export async function GET(request) {
       );
     }
 
-    // Decode the Base64-encoded URL (first decode from URL encoding, then from Base64)
+    // Decode the Base64-encoded URL
+    // searchParams.get() already handles URL decoding, so we just need to Base64 decode
     let imageUrl;
     try {
-      const decodedFromUrl = decodeURIComponent(encodedUrl);
-      imageUrl = atob(decodedFromUrl);
+      imageUrl = atob(encodedUrl);
       console.log('Successfully decoded URL');
     } catch (decodeError) {
       console.error('Failed to decode URL:', decodeError);
@@ -124,6 +124,8 @@ export async function GET(request) {
     // Build clean filename: source-imageId.extension
     // Example: unsplash-photo-1509316975850.jpg
     const filename = `${source}-${sanitizedImageId || 'image'}.${fileExtension}`;
+    
+    console.log('Built filename:', filename, 'Extension:', fileExtension, 'ContentType:', finalContentType);
 
     // Return image with download headers
     return new NextResponse(buffer, {
@@ -133,8 +135,8 @@ export async function GET(request) {
         'Content-Type': finalContentType,
         
         // Tell browser to download file with specific name
-        // Use RFC 5987 encoding to ensure filename is properly interpreted
-        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}; filename="${filename}"`,
+        // Simple format that works in all browsers
+        'Content-Disposition': `attachment; filename="${filename}"`,
         
         // File size in bytes
         'Content-Length': buffer.byteLength.toString(),

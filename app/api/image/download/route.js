@@ -30,9 +30,11 @@ export async function GET(request) {
   try {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const encodedUrl = searchParams.get('url');  // Base64-encoded image URL
+    const encodedUrl = searchParams.get('url');  // Base64-encoded image URL (also URL-encoded)
     const imageId = searchParams.get('id');
     const source = searchParams.get('source') || 'unsplash';
+
+    console.log('Download request received:', { encodedUrl: encodedUrl?.substring(0, 20), imageId, source });
 
     // Validate required parameters
     if (!encodedUrl) {
@@ -42,10 +44,12 @@ export async function GET(request) {
       );
     }
 
-    // Decode the Base64-encoded URL
+    // Decode the Base64-encoded URL (first decode from URL encoding, then from Base64)
     let imageUrl;
     try {
-      imageUrl = atob(encodedUrl);
+      const decodedFromUrl = decodeURIComponent(encodedUrl);
+      imageUrl = atob(decodedFromUrl);
+      console.log('Successfully decoded URL');
     } catch (decodeError) {
       console.error('Failed to decode URL:', decodeError);
       return NextResponse.json(

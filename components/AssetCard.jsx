@@ -1,11 +1,19 @@
 import Link from 'next/link';
 
 /**
- * Asset Card Component
- * Display individual design asset
+ * AssetCard Component
+ * 
+ * Displays a single design asset card with thumbnail, badges, and download count
+ * Shows preview and download buttons on hover
+ * Responsive with mobile-friendly interaction
+ * 
+ * Props:
+ * - asset: Asset object containing thumbnail, type, source, title, author, downloads, etc.
+ * - onPreview: Callback function when user clicks preview button
  */
 export default function AssetCard({ asset, onPreview }) {
-  const typeIcons = {
+  // Emoji icons for different asset types
+  const assetTypeIcons = {
     vector: '🎨',
     illustration: '🖼️',
     photo: '📷',
@@ -14,13 +22,18 @@ export default function AssetCard({ asset, onPreview }) {
     'ai-generated': '🤖',
   };
 
-  const sourceColors = {
+  // Brand colors for different asset sources
+  const sourceColorMap = {
     freepik: 'bg-blue-500',
     pixabay: 'bg-green-500',
     openverse: 'bg-purple-500',
     iconfinder: 'bg-orange-500',
   };
 
+  /**
+   * Trigger download of the asset
+   * Opens download API endpoint in new tab
+   */
   const handleDownload = (e) => {
     e.preventDefault();
     window.open(
@@ -29,7 +42,10 @@ export default function AssetCard({ asset, onPreview }) {
     );
   };
 
-  const formatDownloads = (downloads) => {
+  /**
+   * Format download count to be human-readable (e.g., 1.2M, 500k)
+   */
+  const formatDownloadCount = (downloads) => {
     if (!downloads || downloads === 0) return null;
     if (downloads >= 1000000) return `${(downloads / 1000000).toFixed(1)}M`;
     if (downloads >= 1000) return `${(downloads / 1000).toFixed(1)}k`;
@@ -37,47 +53,53 @@ export default function AssetCard({ asset, onPreview }) {
   };
 
   return (
-    <div className="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-      {/* Thumbnail */}
-      <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+    <div className="asset-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+      {/* Asset thumbnail section */}
+      <div className="asset-thumbnail-section relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+        {/* Thumbnail image or type icon placeholder */}
         {asset.thumbnail ? (
           <img
             src={asset.thumbnail}
             alt={asset.title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            className="asset-image w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            {typeIcons[asset.type] || '📦'}
+          <div className="asset-icon-placeholder w-full h-full flex items-center justify-center text-4xl">
+            {assetTypeIcons[asset.type] || '📦'}
           </div>
         )}
 
-        {/* Type Badge */}
-        <div className="absolute top-2 left-2 flex gap-1">
-          <span className="inline-block px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-full">
+        {/* Top-left badges: Asset type and premium indicator */}
+        <div className="asset-badges-top-left absolute top-2 left-2 flex gap-1">
+          {/* Asset type badge */}
+          <span className="asset-type-badge inline-block px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-full">
             {asset.type?.toUpperCase() || 'ASSET'}
           </span>
+          {/* Premium indicator */}
           {asset.isPremium && (
-            <span className="inline-block px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
+            <span className="premium-badge inline-block px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
               ⭐
             </span>
           )}
         </div>
 
-        {/* Source Badge */}
-        <div className="absolute bottom-2 left-2">
-          <span className={`inline-block px-2 py-1 ${sourceColors[asset.source] || 'bg-gray-500'} text-white text-xs font-medium rounded-full capitalize`}>
+        {/* Bottom-left badge: Source/platform */}
+        <div className="asset-source-badge absolute bottom-2 left-2">
+          <span className={`source-tag inline-block px-2 py-1 ${sourceColorMap[asset.source] || 'bg-gray-500'} text-white text-xs font-medium rounded-full capitalize`}>
             {asset.source}
           </span>
         </div>
 
-        {/* Download Count */}
-        {formatDownloads(asset.downloads) && (
-          <div className="absolute top-2 right-2 bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-700 flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+        {/* Download count badge - top right */}
+        {formatDownloadCount(asset.downloads) && (
+          <div className="download-count-badge absolute top-2 right-2 bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-700 flex items-center gap-1">
+            {/* Download icon */}
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
+            {/* Download count */}
+            <span className="download-count">{formatDownloadCount(asset.downloads)}</span>
             {formatDownloads(asset.downloads)}
           </div>
         )}

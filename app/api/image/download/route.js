@@ -1,19 +1,40 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-
 /**
- * Server-side image download proxy
- * Handles CORS issues by fetching images on the server
- * GET /api/image/download?url=...&id=...&source=...
+ * Image Download API Route
+ * 
+ * Endpoint: GET /api/image/download
+ * 
+ * Purpose:
+ * Provides a server-side proxy for downloading images from Unsplash and Pexels
+ * Solves CORS issues that prevent direct client-side fetching from external URLs
+ * 
+ * How it works:
+ * 1. Client sends URL of image to download (from Unsplash/Pexels)
+ * 2. Server validates the URL to ensure it's from allowed sources
+ * 3. Server fetches the image from the original source
+ * 4. Returns image with proper Content-Disposition header for download
+ * 
+ * Security:
+ * - Only allows URLs from images.unsplash.com and images.pexels.com
+ * - Validates source parameter to prevent abuse
+ * 
+ * Query Parameters:
+ * - url: Full image URL (from image provider)
+ * - id: Image ID (used for filename)
+ * - source: Source name ('unsplash' or 'pexels')
  */
+export const dynamic = 'force-dynamic';  // Don't cache this route
+
 export async function GET(request) {
   try {
+    // Parse query parameters
     const { searchParams } = new URL(request.url);
     const imageUrl = searchParams.get('url');
     const imageId = searchParams.get('id');
     const source = searchParams.get('source') || 'unsplash';
 
+    // Validate required parameters
     if (!imageUrl) {
       return NextResponse.json(
         { error: 'url parameter is required' },
@@ -21,7 +42,7 @@ export async function GET(request) {
       );
     }
 
-    // Validate URL to prevent abuse (only allow Unsplash and Pexels)
+    // SECURITY: Validate URL to prevent downloading from arbitrary sources
     const url = new URL(imageUrl);
     const allowedHosts = ['images.unsplash.com', 'images.pexels.com'];
     
@@ -32,13 +53,15 @@ export async function GET(request) {
       );
     }
 
-    // Fetch the image from the source
+    // Fetch the image from the original source
+    // Include User-Agent header to avoid being blocked by some servers
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
     });
 
+    // Handle fetch errors
     if (!imageResponse.ok) {
       console.error(`Failed to fetch image: ${imageResponse.status}`);
       return NextResponse.json(
@@ -47,35 +70,50 @@ export async function GET(request) {
       );
     }
 
+    // Convert image response to buffer for sending
     const buffer = await imageResponse.arrayBuffer();
+    
+    // Get content type from response headers
     let contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     
-    // Handle content type with charset
+    // Extract base content type (remove charset and other parameters)
     if (contentType.includes(';')) {
       contentType = contentType.split(';')[0].trim();
     }
 
-    // Determine file extension from content type
-    const extMap = {
+    // Map content type to file extension
+    const extensionMap = {
       'image/jpeg': 'jpg',
       'image/jpg': 'jpg',
       'image/png': 'png',
       'image/webp': 'webp',
       'image/gif': 'gif',
     };
-    const ext = extMap[contentType] || 'jpg';
-    const filename = `${source}-${imageId}.${ext}`;
+    const fileExtension = extensionMap[contentType] || 'jpg';
+    
+    // Build filename: source-imageId.extension
+    const filename = `${source}-${imageId}.${fileExtension}`;
 
-    // Return image with download headers and CORS support
+    // Return image with download headers
     return new NextResponse(buffer, {
       status: 200,
       headers: {
+        // Content type must match actual image format
         'Content-Type': contentType,
+        
+        // Tell browser to download file with specific name
+        // filename* is for UTF-8 encoding, filename is fallback
         'Content-Disposition': `attachment; filename*=UTF-8''${filename}; filename="${filename}"`,
+        
+        // File size in bytes
         'Content-Length': buffer.byteLength.toString(),
+        
+        // Cache control: don't cache downloads
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
+        
+        // Security: prevent browsers from guessing file type
         'X-Content-Type-Options': 'nosniff',
       },
     });

@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import './Navigation.css';
+'use client';
 
-const Navigation = () => {
+import { useState } from 'react';
+import Link from 'next/link';
+import styles from './Navigation.module.css';
+
+export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -13,46 +16,48 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="navigation">
-      <div className="nav-container">
-        {/* Logo */}
-        <div className="nav-logo">
-          <a href="/">Image Downloader</a>
-        </div>
+    <nav className={styles.navbar}>
+      <div className={styles.container}>
+        <Link href="/" className={styles.logo}>
+          <span className={styles.logoText}>Image Downloader</span>
+        </Link>
 
-        {/* Hamburger Menu Icon */}
-        <div className="hamburger" onClick={toggleMenu}>
-          <span className={`hamburger-line ${isMenuOpen ? 'active' : ''}`}></span>
-          <span className={`hamburger-line ${isMenuOpen ? 'active' : ''}`}></span>
-          <span className={`hamburger-line ${isMenuOpen ? 'active' : ''}`}></span>
-        </div>
+        {/* Hamburger Menu Button */}
+        <button
+          className={`${styles.hamburger} ${isMenuOpen ? styles.active : ''}`}
+          onClick={toggleMenu}
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMenuOpen}
+        >
+          <span className={styles.hamburgerLine}></span>
+          <span className={styles.hamburgerLine}></span>
+          <span className={styles.hamburgerLine}></span>
+        </button>
 
-        {/* Navigation Menu */}
-        <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
-          <li className="nav-item">
-            <a href="#home" className="nav-link" onClick={closeMenu}>
+        {/* Navigation Links */}
+        <ul className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
+          <li>
+            <Link href="/" onClick={closeMenu} className={styles.navLink}>
               Home
-            </a>
+            </Link>
           </li>
-          <li className="nav-item">
-            <a href="#features" className="nav-link" onClick={closeMenu}>
-              Features
-            </a>
-          </li>
-          <li className="nav-item">
-            <a href="#about" className="nav-link" onClick={closeMenu}>
+          <li>
+            <Link href="/about" onClick={closeMenu} className={styles.navLink}>
               About
-            </a>
+            </Link>
           </li>
-          <li className="nav-item">
-            <a href="#contact" className="nav-link" onClick={closeMenu}>
+          <li>
+            <Link href="/download" onClick={closeMenu} className={styles.navLink}>
+              Download
+            </Link>
+          </li>
+          <li>
+            <Link href="/contact" onClick={closeMenu} className={styles.navLink}>
               Contact
-            </a>
+            </Link>
           </li>
         </ul>
       </div>
     </nav>
   );
-};
-
-export default Navigation;
+}

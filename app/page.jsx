@@ -89,11 +89,11 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary-600">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <Link href="/" className="text-lg md:text-2xl font-bold text-primary-600">
             ARTURO.JSX 
           </Link>
-          <div className="flex gap-6">
+          <div className="flex gap-3 md:gap-6 text-xs md:text-base">
             <Link
               href="/"
               className="text-primary-600 font-medium"
@@ -108,7 +108,7 @@ export default function Home() {
             </Link>
             <Link
               href="/design-assets"
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+              className="text-gray-700 hover:text-primary-600 font-medium transition-colors hidden sm:inline"
             >
               Design Assets
             </Link>
@@ -118,14 +118,14 @@ export default function Home() {
 
       {/* Header with Gradient Background */}
       <header className="bg-gradient-to-b from-[#f8fbff] to-white sticky top-16 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6 md:pt-12 pb-6 md:pb-8">
+          <h1 className="text-2xl md:text-4xl font-bold text-center mb-4 md:mb-8 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
             Image Downloader
           </h1>
-          <div className="max-w-2xl mx-auto mb-6">
+          <div className="max-w-2xl mx-auto mb-4 md:mb-6">
             <SearchBar onSearch={handleSearch} initialValue={searchQuery} />
           </div>
-          <div className="flex justify-center">
+          <div className="flex justify-center overflow-x-auto">
             <SourceSelector
               selectedSource={selectedSource}
               onSourceChange={handleSourceChange}
@@ -136,7 +136,7 @@ export default function Home() {
 
       {/* Category Bar - Sticky */}
       <div className="sticky top-16 z-30 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
           <CategoryBar
             selectedCategory={selectedCategory}
             onCategorySelect={handleCategorySelect}
@@ -145,7 +145,7 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">

@@ -33,7 +33,7 @@ export default function SearchBar({ onSearch, initialValue = '' }) {
           name="search"
           defaultValue={initialValue}
           placeholder="Search for images..."
-          className="w-full px-6 py-4 pl-14 pr-6 text-lg rounded-full border-2 border-gray-200 bg-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 shadow-sm"
+          className="w-full px-4 md:px-6 py-3 md:py-4 pl-10 md:pl-14 pr-12 md:pr-6 text-sm md:text-lg rounded-full border-2 border-gray-200 bg-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 shadow-sm"
         />
         <button
           type="submit"

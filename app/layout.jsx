@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'DownloadHub - Free Stock Photos & Movies',
+  title: 'ARTURO.JSX - Free Stock Photos & Movies',
   description: 'Discover and download high-quality free stock photos and movies from Unsplash and TMDB',
 };
 

@@ -15,10 +15,11 @@ export async function GET(request) {
 
     const pixabayKey = process.env.PIXABAY_API_KEY;
     const iconfinderKey = process.env.ICONFINDER_API_KEY;
+    const freepikKey = process.env.FREEPIK_API_KEY;
 
-    if (!pixabayKey) {
+    if (!pixabayKey && !freepikKey) {
       return NextResponse.json(
-        { error: 'Pixabay API key not configured' },
+        { error: 'No API keys configured for asset search' },
         { status: 500 }
       );
     }
@@ -63,6 +64,22 @@ export async function GET(request) {
         results.push(...iconfindResults);
       } catch (err) {
         console.error('IconFinder fetch error:', err);
+      }
+    }
+
+    // Fetch from Freepik (design assets)
+    if (['all', 'vector', 'illustration', 'template'].includes(type) && freepikKey) {
+      try {
+        const freepikResults = await fetchFromFreepik(
+          query,
+          type,
+          page,
+          perPage,
+          freepikKey
+        );
+        results.push(...freepikResults);
+      } catch (err) {
+        console.error('Freepik fetch error:', err);
       }
     }
 
@@ -222,6 +239,62 @@ async function fetchFromIconFinder(query, page, perPage, apiKey) {
     }));
   } catch (err) {
     console.error('IconFinder error:', err);
+    return [];
+  }
+}
+/**
+ * Fetch from Freepik API (design templates, vectors, illustrations)
+ */
+async function fetchFromFreepik(query, type, page, perPage, apiKey) {
+  try {
+    // Freepik API v4 search endpoint
+    const typeMap = {
+      all: 'all',
+      vector: 'vector',
+      illustration: 'illustration',
+      photo: 'photo',
+      template: 'template',
+    };
+
+    const freepikType = typeMap[type] || 'all';
+    
+    const url = `https://api.freepik.com/v1/resources?query=${encodeURIComponent(
+      query
+    )}&type=${freepikType}&page=${page}&limit=${perPage}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'x-freepik-api-key': apiKey,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`Freepik API responded with status ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+
+    return (data.data || []).map((item) => ({
+      id: `freepik-${item.id}`,
+      title: item.title || query,
+      description: item.description || `${freepikType} design asset`,
+      type: item.resource_type || type,
+      thumbnail: item.thumbnails?.original || item.image || '',
+      preview: item.image || item.thumbnails?.original || '',
+      author: item.author?.name || 'Freepik Creator',
+      downloads: item.download_count || 0,
+      tags: item.tags?.map((t) => typeof t === 'string' ? t : t.name) || [],
+      formats: ['png', 'eps', 'svg'],
+      source: 'freepik',
+      sourceUrl: item.url || '',
+      sourceId: item.id,
+      isPremium: item.is_premium || false,
+      rating: item.rating || 0,
+    }));
+  } catch (err) {
+    console.error('Freepik error:', err);
     return [];
   }
 }

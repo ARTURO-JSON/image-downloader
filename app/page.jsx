@@ -215,7 +215,7 @@ export default function Home() {
       </nav>
 
       {/* Header with Gradient Background */}
-      <header className="bg-gradient-to-b from-[#f8fbff] to-white sticky top-16 z-40 shadow-sm">
+      <header className="bg-gradient-to-b from-[#f8fbff] to-white">
         <div className="max-w-7xl mx-auto px-4 pt-12 pb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
             Image Downloader
@@ -232,8 +232,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Category Bar - Sticky */}
-      <div className="sticky top-16 z-30 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
+      {/* Category Bar */}
+      <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4">
           <CategoryBar
             selectedCategory={selectedCategory}

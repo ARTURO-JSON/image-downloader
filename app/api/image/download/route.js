@@ -48,11 +48,17 @@ export async function GET(request) {
     }
 
     const buffer = await imageResponse.arrayBuffer();
-    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    let contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    
+    // Handle content type with charset
+    if (contentType.includes(';')) {
+      contentType = contentType.split(';')[0].trim();
+    }
 
     // Determine file extension from content type
     const extMap = {
       'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
       'image/png': 'png',
       'image/webp': 'webp',
       'image/gif': 'gif',
@@ -65,11 +71,12 @@ export async function GET(request) {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename*=UTF-8''${filename}; filename="${filename}"`,
         'Content-Length': buffer.byteLength.toString(),
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

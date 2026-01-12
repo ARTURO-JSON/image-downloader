@@ -12,15 +12,42 @@ export default function AssetPreviewModal({ asset, isOpen, onClose }) {
     );
   };
 
+  const formatDownloads = (downloads) => {
+    if (!downloads || downloads === 0) return '0';
+    if (downloads >= 1000000) return `${(downloads / 1000000).toFixed(1)}M`;
+    if (downloads >= 1000) return `${(downloads / 1000).toFixed(1)}k`;
+    return downloads.toString();
+  };
+
+  const sourceColors = {
+    freepik: 'bg-blue-500',
+    pixabay: 'bg-green-500',
+    openverse: 'bg-purple-500',
+    iconfinder: 'bg-orange-500',
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div 
+        className="bg-white rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-          <h2 className="text-xl font-bold text-gray-900">Asset Preview</h2>
+        <div className="sticky top-0 flex items-center justify-between p-6 border-b border-gray-200 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-900">Asset Preview</h2>
+            <span className={`px-2 py-1 ${sourceColors[asset.source] || 'bg-gray-500'} text-white text-xs font-medium rounded-full capitalize`}>
+              {asset.source}
+            </span>
+            {asset.isPremium && (
+              <span className="px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
+                ⭐ Premium
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-colors p-2 hover:bg-gray-100 rounded-full"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -51,7 +78,7 @@ export default function AssetPreviewModal({ asset, isOpen, onClose }) {
             </div>
 
             {/* Meta Info */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
                 <p className="text-xs text-gray-600 font-medium">Author</p>
                 <p className="text-gray-900 font-medium">{asset.author || 'Unknown'}</p>
@@ -62,12 +89,36 @@ export default function AssetPreviewModal({ asset, isOpen, onClose }) {
               </div>
               <div>
                 <p className="text-xs text-gray-600 font-medium">Source</p>
-                <p className="text-gray-900 font-medium">{asset.source}</p>
+                <p className="text-gray-900 font-medium capitalize">{asset.source}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-600 font-medium">Downloads</p>
-                <p className="text-gray-900 font-medium">{(asset.downloads / 1000).toFixed(1)}k</p>
+                <p className="text-gray-900 font-medium">{formatDownloads(asset.downloads)}</p>
               </div>
+              {asset.likes > 0 && (
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Likes</p>
+                  <p className="text-gray-900 font-medium">{formatDownloads(asset.likes)}</p>
+                </div>
+              )}
+              {asset.orientation && (
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Orientation</p>
+                  <p className="text-gray-900 font-medium capitalize">{asset.orientation}</p>
+                </div>
+              )}
+              {asset.size && (
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Size</p>
+                  <p className="text-gray-900 font-medium">{asset.size}</p>
+                </div>
+              )}
+              {asset.isNew && (
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Status</p>
+                  <p className="text-green-600 font-medium">✨ New</p>
+                </div>
+              )}
             </div>
 
             {/* Tags */}
@@ -107,18 +158,35 @@ export default function AssetPreviewModal({ asset, isOpen, onClose }) {
             </div>
 
             {/* License Info */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900">
-                <span className="font-medium">License:</span> {asset.license || 'Various'}
-              </p>
-              <a
-                href={asset.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 inline-block"
-              >
-                View on {asset.source}
-              </a>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-blue-900">
+                    <span className="font-medium">License:</span> {asset.license || 'Various'}
+                  </p>
+                  {asset.licenseUrl && (
+                    <a
+                      href={asset.licenseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:text-blue-700 underline mt-1 inline-block"
+                    >
+                      View license details
+                    </a>
+                  )}
+                </div>
+                <a
+                  href={asset.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  View on {asset.source?.charAt(0).toUpperCase() + asset.source?.slice(1)}
+                </a>
+              </div>
             </div>
           </div>
         </div>

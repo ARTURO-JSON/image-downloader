@@ -28,7 +28,7 @@ export default function DesignAssetsPage() {
   // Initial load and when filters change
   useEffect(() => {
     loadAssets(searchQuery, assetType, category, 1, true);
-  }, [searchQuery, assetType, category]);
+  }, [searchQuery, assetType, category, sortBy]);
 
   /**
    * Load assets from API
@@ -43,7 +43,7 @@ export default function DesignAssetsPage() {
       }
 
       const response = await fetch(
-        `/api/assets/search?query=${encodeURIComponent(query)}&type=${type}&category=${cat}&page=${page}&perPage=20`
+        `/api/assets/search?query=${encodeURIComponent(query)}&type=${type}&category=${cat}&page=${page}&perPage=20&sort=${sortBy}`
       );
 
       if (!response.ok) {
@@ -287,10 +287,10 @@ export default function DesignAssetsPage() {
         </div>
 
         {/* Info Banner */}
-        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
           <div className="flex gap-4">
             <svg
-              className="w-6 h-6 text-blue-500 flex-shrink-0"
+              className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -302,10 +302,16 @@ export default function DesignAssetsPage() {
             </svg>
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">About This Library</h3>
-              <p className="text-sm text-blue-800 leading-relaxed">
-                Our design assets are sourced from high-quality legal APIs including Pixabay, OpenVerse, and IconFinder.
-                All assets are free to download and use. Check individual licenses for usage rights.
+              <p className="text-sm text-blue-800 leading-relaxed mb-3">
+                Our design assets are sourced from premium APIs including <span className="font-semibold">Freepik</span>, Pixabay, OpenVerse, and IconFinder.
+                Browse vectors, photos, illustrations, and templates for your creative projects.
               </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full">Freepik</span>
+                <span className="px-3 py-1 bg-green-500 text-white text-xs font-medium rounded-full">Pixabay</span>
+                <span className="px-3 py-1 bg-purple-500 text-white text-xs font-medium rounded-full">OpenVerse</span>
+                <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full">IconFinder</span>
+              </div>
             </div>
           </div>
         </div>

@@ -10,6 +10,15 @@ export default function AssetCard({ asset, onPreview }) {
     illustration: '🖼️',
     photo: '📷',
     template: '📋',
+    psd: '🎭',
+    'ai-generated': '🤖',
+  };
+
+  const sourceColors = {
+    freepik: 'bg-blue-500',
+    pixabay: 'bg-green-500',
+    openverse: 'bg-purple-500',
+    iconfinder: 'bg-orange-500',
   };
 
   const handleDownload = (e) => {
@@ -18,6 +27,13 @@ export default function AssetCard({ asset, onPreview }) {
       `/api/assets/download?id=${asset.sourceId}&source=${asset.source}&format=jpg`,
       '_blank'
     );
+  };
+
+  const formatDownloads = (downloads) => {
+    if (!downloads || downloads === 0) return null;
+    if (downloads >= 1000000) return `${(downloads / 1000000).toFixed(1)}M`;
+    if (downloads >= 1000) return `${(downloads / 1000).toFixed(1)}k`;
+    return downloads.toString();
   };
 
   return (
@@ -29,6 +45,7 @@ export default function AssetCard({ asset, onPreview }) {
             src={asset.thumbnail}
             alt={asset.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl">
@@ -37,19 +54,31 @@ export default function AssetCard({ asset, onPreview }) {
         )}
 
         {/* Type Badge */}
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 flex gap-1">
           <span className="inline-block px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-full">
-            {asset.type.toUpperCase()}
+            {asset.type?.toUpperCase() || 'ASSET'}
+          </span>
+          {asset.isPremium && (
+            <span className="inline-block px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
+              ⭐
+            </span>
+          )}
+        </div>
+
+        {/* Source Badge */}
+        <div className="absolute bottom-2 left-2">
+          <span className={`inline-block px-2 py-1 ${sourceColors[asset.source] || 'bg-gray-500'} text-white text-xs font-medium rounded-full capitalize`}>
+            {asset.source}
           </span>
         </div>
 
         {/* Download Count */}
-        {asset.downloads > 0 && (
+        {formatDownloads(asset.downloads) && (
           <div className="absolute top-2 right-2 bg-white px-3 py-1 rounded-full text-xs font-medium text-gray-700 flex items-center gap-1">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M4.5 13a6 6 0 0 0 11.9-1.6l-2.1-2.1A3.5 3.5 0 0 1 7.6 9.5l2.5-2.5a1 1 0 1 0-1.4-1.4l-4 4a1 1 0 0 0 0 1.4l4 4a1 1 0 0 0 1.4-1.4L4.5 10" />
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            {(asset.downloads / 1000).toFixed(1)}k
+            {formatDownloads(asset.downloads)}
           </div>
         )}
 

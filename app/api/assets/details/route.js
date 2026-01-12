@@ -27,6 +27,8 @@ export async function GET(request) {
       assetDetails = await getOpenverseDetails(assetId);
     } else if (source === 'iconfinder') {
       assetDetails = await getIconfinderDetails(assetId);
+    } else if (source === 'freepik') {
+      assetDetails = await getFreepikDetails(assetId);
     }
 
     if (!assetDetails) {
@@ -166,6 +168,88 @@ async function getIconfinderDetails(iconfinderId) {
     };
   } catch (err) {
     console.error('IconFinder details error:', err);
+    return null;
+  }
+}
+
+/**
+ * Get Freepik asset details
+ * Docs: https://docs.freepik.com/api-reference/resources/get-the-detail-of-a-resource-psd-vector-or-photo
+ */
+async function getFreepikDetails(freepikId) {
+  try {
+    const apiKey = process.env.FREEPIK_API_KEY;
+    if (!apiKey) {
+      console.error('Freepik API key not configured');
+      return null;
+    }
+
+    const url = `https://api.freepik.com/v1/resources/${freepikId}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'x-freepik-api-key': apiKey,
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Freepik details API error: ${response.status}`);
+      return null;
+    }
+
+    const responseData = await response.json();
+    const item = responseData.data;
+
+    if (!item) return null;
+
+    // Extract available formats
+    const availableFormats = item.available_formats || {};
+    const formats = Object.keys(availableFormats).filter(
+      (format) => availableFormats[format]?.total > 0
+    );
+
+    // Extract tags from related_tags
+    const tags = (item.related_tags || []).map((t) => t.name).filter(Boolean);
+
+    // Get dimensions
+    const width = item.dimensions?.width || item.preview?.width || 0;
+    const height = item.dimensions?.height || item.preview?.height || 0;
+
+    return {
+      id: `freepik-${item.id}`,
+      title: item.name || 'Design Asset',
+      description: `High-quality ${item.type || 'design'} asset from Freepik`,
+      type: item.type || 'photo',
+      thumbnail: item.preview?.url || '',
+      preview: item.preview?.url || '',
+      full: item.preview?.url || '',
+      author: item.author?.name || 'Freepik Creator',
+      authorAvatar: item.author?.avatar || '',
+      authorSlug: item.author?.slug || '',
+      downloads: 0,
+      tags: tags,
+      formats: formats.length > 0 ? formats : ['jpg'],
+      source: 'freepik',
+      sourceUrl: item.url || '',
+      sourceId: item.id,
+      width: width,
+      height: height,
+      category: item.type?.charAt(0).toUpperCase() + item.type?.slice(1) || 'Design',
+      license: 'Freepik License',
+      licenseUrl: item.license || '',
+      isPremium: item.premium || false,
+      isNew: item.new || false,
+      isAiGenerated: item.is_ai_generated || false,
+      hasPrompt: item.has_prompt || false,
+      createdAt: item.created || null,
+      downloadSize: item.download_size || 0,
+      slug: item.slug || '',
+      relatedResources: item.related_resources || null,
+    };
+  } catch (err) {
+    console.error('Freepik details error:', err);
     return null;
   }
 }

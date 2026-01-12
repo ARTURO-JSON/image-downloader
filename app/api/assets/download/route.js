@@ -28,6 +28,8 @@ export async function GET(request) {
       downloadUrl = await getOpenverseDownloadUrl(assetId, format);
     } else if (source === 'iconfinder') {
       downloadUrl = await getIconfinderDownloadUrl(assetId, format);
+    } else if (source === 'freepik') {
+      downloadUrl = await getFreepikDownloadUrl(assetId, format);
     }
 
     if (!downloadUrl) {
@@ -122,6 +124,76 @@ async function getIconfinderDownloadUrl(iconfinderId, format) {
     return formatMap[format] || data.formats?.[0]?.download_url;
   } catch (err) {
     console.error('IconFinder download error:', err);
+    return null;
+  }
+}
+
+/**
+ * Get Freepik download URL
+ * Docs: https://docs.freepik.com/api-reference/resources/download-a-resource
+ */
+async function getFreepikDownloadUrl(freepikId, format) {
+  try {
+    const apiKey = process.env.FREEPIK_API_KEY;
+    if (!apiKey) {
+      console.error('Freepik API key not configured');
+      return null;
+    }
+
+    const url = `https://api.freepik.com/v1/resources/${freepikId}/download`;
+
+    const response = await fetch(url, {
+      headers: {
+        'x-freepik-api-key': apiKey,
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Freepik download API error: ${response.status}`);
+      // If download fails, try to get the preview URL from details
+      return await getFreepikPreviewUrl(freepikId);
+    }
+
+    const responseData = await response.json();
+    const data = responseData.data;
+
+    // Freepik returns either a signed_url (for photos) or a url (for vectors/psd)
+    return data?.signed_url || data?.url || null;
+  } catch (err) {
+    console.error('Freepik download error:', err);
+    return null;
+  }
+}
+
+/**
+ * Fallback: Get Freepik preview URL when download is not available
+ */
+async function getFreepikPreviewUrl(freepikId) {
+  try {
+    const apiKey = process.env.FREEPIK_API_KEY;
+    if (!apiKey) return null;
+
+    const url = `https://api.freepik.com/v1/resources/${freepikId}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'x-freepik-api-key': apiKey,
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const responseData = await response.json();
+    const item = responseData.data;
+
+    // Return the preview URL as fallback
+    return item?.preview?.url || null;
+  } catch (err) {
+    console.error('Freepik preview URL error:', err);
     return null;
   }
 }

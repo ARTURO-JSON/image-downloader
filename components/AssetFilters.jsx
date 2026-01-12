@@ -1,6 +1,6 @@
 /**
  * Asset Filters Component
- * Filter assets by type and category
+ * Filter assets by type, category, and source
  */
 export default function AssetFilters({ selectedType, selectedCategory, onTypeChange, onCategoryChange, onSort }) {
   const types = [
@@ -12,7 +12,7 @@ export default function AssetFilters({ selectedType, selectedCategory, onTypeCha
   ];
 
   const categories = [
-    { id: 'all', label: 'All' },
+    { id: 'all', label: 'All Categories' },
     { id: 'business', label: 'Business' },
     { id: 'background', label: 'Backgrounds' },
     { id: 'infographic', label: 'Infographics' },
@@ -20,10 +20,14 @@ export default function AssetFilters({ selectedType, selectedCategory, onTypeCha
     { id: 'abstract', label: 'Abstract' },
     { id: 'technology', label: 'Technology' },
     { id: 'nature', label: 'Nature' },
+    { id: 'people', label: 'People' },
+    { id: 'food', label: 'Food' },
+    { id: 'travel', label: 'Travel' },
+    { id: 'education', label: 'Education' },
   ];
 
   const sorts = [
-    { id: 'popular', label: 'Popular' },
+    { id: 'popular', label: 'Most Popular' },
     { id: 'latest', label: 'Latest' },
     { id: 'downloads', label: 'Most Downloaded' },
   ];

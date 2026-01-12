@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Get detailed information about a specific asset
  * GET /api/assets/details?id=...&source=...

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Download asset - returns redirect URL
  * GET /api/assets/download?id=...&source=...&format=...

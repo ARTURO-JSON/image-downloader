@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // Genre ID mapping for TMDB API
 const genreMap = {
   action: 28,

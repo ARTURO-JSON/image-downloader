@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Aggregate design assets from multiple legal APIs
  * GET /api/assets/search?query=...&type=...&category=...&page=...

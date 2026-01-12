@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import axios from 'axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import Navigation from '@/components/Navigation';
+import SearchBar from '@/components/SearchBar';
+import SourceSelector from '@/components/SourceSelector';
+import CategoryBar from '@/components/CategoryBar';
 
 export default function Home() {
   const [input, setInput] = useState('');

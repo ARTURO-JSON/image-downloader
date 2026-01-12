@@ -91,8 +91,13 @@ export async function GET(request) {
     };
     const fileExtension = extensionMap[contentType] || 'jpg';
     
+    // Sanitize image ID: remove any non-alphanumeric characters except hyphens and underscores
+    // This prevents issues with special characters in filenames
+    const sanitizedImageId = imageId.replace(/[^a-zA-Z0-9_-]/g, '');
+    
     // Build filename: source-imageId.extension
-    const filename = `${source}-${imageId}.${fileExtension}`;
+    // Example: unsplash-abc123def456.jpg
+    const filename = `${source}-${sanitizedImageId || 'image'}.${fileExtension}`;
 
     // Return image with download headers
     return new NextResponse(buffer, {

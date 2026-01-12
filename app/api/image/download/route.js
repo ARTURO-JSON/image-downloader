@@ -129,7 +129,8 @@ export async function GET(request) {
         'Content-Type': finalContentType,
         
         // Tell browser to download file with specific name
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        // Use RFC 5987 encoding to ensure filename is properly interpreted
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}; filename="${filename}"`,
         
         // File size in bytes
         'Content-Length': buffer.byteLength.toString(),

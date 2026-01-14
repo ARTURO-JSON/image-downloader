@@ -79,9 +79,9 @@ export async function GET(request) {
 
     // Handle fetch errors
     if (!imageResponse.ok) {
-      console.error(`Failed to fetch image: ${imageResponse.status}`);
+      console.error(`Failed to fetch image: ${imageResponse.status} from ${imageUrl}`);
       return NextResponse.json(
-        { error: 'Failed to fetch image' },
+        { error: `Failed to fetch image: ${imageResponse.status}` },
         { status: imageResponse.status }
       );
     }
@@ -97,20 +97,35 @@ export async function GET(request) {
       contentType = contentType.split(';')[0].trim();
     }
 
+    // Try to extract file extension from the URL as well (especially useful for Pexels)
+    let urlExtension = null;
+    try {
+      const urlPath = new URL(imageUrl).pathname.toLowerCase();
+      const urlMatch = urlPath.match(/\.([a-z]+)(?:\?|$)/);
+      if (urlMatch && urlMatch[1]) {
+        urlExtension = urlMatch[1];
+      }
+    } catch (e) {
+      // Silently fail URL parsing
+    }
+
     // Normalize content type and determine file extension
     // Map all variations to standard formats
     let fileExtension = 'jpg';  // Default to jpg
     let finalContentType = 'image/jpeg';  // Default content type
     
-    if (contentType.includes('png')) {
+    if (contentType.includes('png') || urlExtension === 'png') {
       fileExtension = 'png';
       finalContentType = 'image/png';
-    } else if (contentType.includes('webp')) {
+    } else if (contentType.includes('webp') || urlExtension === 'webp') {
       fileExtension = 'webp';
       finalContentType = 'image/webp';
-    } else if (contentType.includes('gif')) {
+    } else if (contentType.includes('gif') || urlExtension === 'gif') {
       fileExtension = 'gif';
       finalContentType = 'image/gif';
+    } else if (contentType.includes('jpeg') || contentType.includes('jpg') || urlExtension === 'jpg' || urlExtension === 'jpeg') {
+      fileExtension = 'jpg';
+      finalContentType = 'image/jpeg';
     } else {
       // All other image types (jpeg, jpg, or unknown) default to jpg
       fileExtension = 'jpg';

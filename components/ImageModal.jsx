@@ -78,15 +78,25 @@ export default function ImageModal({ image, onClose }) {
             <h3 className="text-white text-xl font-semibold mb-2">
               {image.description}
             </h3>
+            {/* Photographer and Unsplash Attribution */}
             <p className="text-white text-sm opacity-90">
               Photo by{' '}
               <a
                 href={image.photographerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:opacity-75 transition-opacity"
+                className="underline hover:opacity-75 transition-opacity font-medium"
               >
                 {image.photographer}
+              </a>
+              {' '}on{' '}
+              <a
+                href="https://unsplash.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:opacity-75 transition-opacity font-medium"
+              >
+                Unsplash
               </a>
             </p>
             <p className="text-white text-xs opacity-75 mt-1">

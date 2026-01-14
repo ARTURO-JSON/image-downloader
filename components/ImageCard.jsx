@@ -30,7 +30,7 @@ export default function ImageCard({ image, onClick }) {
       {/* Image container with fixed aspect ratio */}
       <div className="image-container aspect-square relative">
         <Image
-          src={image.thumb || image.url}
+          src={image.url || image.thumb}
           alt={image.description}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -48,9 +48,28 @@ export default function ImageCard({ image, onClick }) {
             {image.description}
           </p>
           
-          {/* Photographer name */}
+          {/* Photographer and Unsplash attribution */}
           <p className="photographer-name text-white text-xs opacity-90 mt-1">
-            by {image.photographer}
+            by{' '}
+            <a
+              href={image.photographerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-75 transition-opacity font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {image.photographer}
+            </a>
+            {' '}on{' '}
+            <a
+              href="https://unsplash.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-75 transition-opacity font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Unsplash
+            </a>
           </p>
         </div>
       </div>

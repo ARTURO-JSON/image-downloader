@@ -27,22 +27,33 @@ export default function ImageModal({ image, onClose }) {
   if (!image) return null;
 
   const handleDownload = () => {
-    downloadImage(image.full || image.url, image.id, image.source || 'unsplash');
+    downloadImage(
+      image.full || image.url, 
+      image.id, 
+      image.source || 'unsplash',
+      image.downloadLocation // Pass Unsplash download location for production API requirement
+    );
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-lg p-4 animate-fadeIn"
       onClick={onClose}
     >
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
       <div
-        className="relative max-w-7xl max-h-[90vh] w-full h-full flex flex-col"
+        className="relative w-full max-w-6xl h-full max-h-[95vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-2 transition-all duration-200 hover:scale-110"
+          className="absolute top-4 right-4 z-20 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 hover:scale-110 backdrop-blur-md border border-white/20"
           aria-label="Close modal"
         >
           <svg
@@ -60,69 +71,90 @@ export default function ImageModal({ image, onClose }) {
           </svg>
         </button>
 
-        {/* Image Container */}
-        <div className="flex-1 relative overflow-hidden rounded-lg mb-4">
+        {/* Main Image Container - HD Display */}
+        <div className="flex-1 relative overflow-hidden rounded-2xl mb-6 shadow-2xl group">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-black/20 z-10 pointer-events-none"></div>
           <Image
-            src={image.url || image.full}
+            src={image.full || image.url}
             alt={image.description}
             fill
-            className="object-contain"
+            className="object-contain transition-transform duration-300 group-hover:scale-105"
             sizes="100vw"
             priority
+            quality={95}
           />
+          
+          {/* HD Badge */}
+          <div className="absolute bottom-4 right-4 z-20 bg-blue-600/90 backdrop-blur-md px-4 py-2 rounded-full text-white text-xs font-bold border border-blue-400/50">
+            📸 HD Quality
+          </div>
         </div>
 
         {/* Info and Download Section */}
-        <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-lg p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex-1">
-            <h3 className="text-white text-xl font-semibold mb-2">
-              {image.description}
-            </h3>
-            {/* Photographer and Unsplash Attribution */}
-            <p className="text-white text-sm opacity-90">
-              Photo by{' '}
-              <a
-                href={image.photographerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:opacity-75 transition-opacity font-medium"
-              >
-                {image.photographer}
-              </a>
-              {' '}on{' '}
-              <a
-                href="https://unsplash.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:opacity-75 transition-opacity font-medium"
-              >
-                Unsplash
-              </a>
-            </p>
-            <p className="text-white text-xs opacity-75 mt-1">
-              {image.width} × {image.height}
-            </p>
-          </div>
+        <div className="bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            {/* Info Section */}
+            <div className="flex-1">
+              <h3 className="text-white text-2xl font-bold mb-3 leading-tight">
+                {image.description}
+              </h3>
+              
+              {/* Photographer and Unsplash Attribution */}
+              <div className="space-y-2 mb-4">
+                <p className="text-white/90 text-base flex items-center gap-2">
+                  <span className="text-lg">📷</span>
+                  Photo by{' '}
+                  <a
+                    href={image.photographerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 underline hover:text-blue-300 transition-colors font-semibold"
+                  >
+                    {image.photographer}
+                  </a>
+                </p>
+                <p className="text-white/90 text-base flex items-center gap-2">
+                  <span className="text-lg">🌐</span>
+                  on{' '}
+                  <a
+                    href="https://unsplash.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 underline hover:text-blue-300 transition-colors font-semibold"
+                  >
+                    Unsplash
+                  </a>
+                </p>
+              </div>
+              
+              {/* Image Dimensions */}
+              <p className="text-white/70 text-sm flex items-center gap-2">
+                <span>📐</span>
+                {image.width} × {image.height} pixels
+              </p>
+            </div>
 
-          <button
-            onClick={handleDownload}
-            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            {/* Download Button */}
+            <button
+              onClick={handleDownload}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl transition-all duration-200 transform hover:scale-110 hover:shadow-2xl shadow-lg flex items-center justify-center gap-3 whitespace-nowrap border border-blue-400/50 backdrop-blur-sm"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            Download
-          </button>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download HD
+            </button>
+          </div>
         </div>
       </div>
     </div>

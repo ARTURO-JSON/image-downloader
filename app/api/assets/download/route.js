@@ -4,7 +4,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Download asset - fetches and returns the file with download headers
- * GET /api/assets/download?id=...&source=...&format=...
+ * GET /api/assets/download?id=...&source=...&format=...&downloadLocation=...
+ * 
+ * For Unsplash: Also accepts downloadLocation parameter to trigger Unsplash download event
  */
 export async function GET(request) {
   try {
@@ -12,6 +14,23 @@ export async function GET(request) {
     const assetId = searchParams.get('id');
     const source = searchParams.get('source');
     const format = searchParams.get('format') || 'jpg';
+    const downloadLocation = searchParams.get('downloadLocation');
+
+    // Trigger Unsplash download event if provided
+    if (source === 'unsplash' && downloadLocation) {
+      try {
+        await fetch(downloadLocation, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+        });
+        console.log('Unsplash download event triggered');
+      } catch (triggerError) {
+        console.error('Failed to trigger Unsplash download event:', triggerError);
+        // Don't fail the request - the download will still work
+      }
+    }
 
     if (!assetId || !source) {
       return NextResponse.json(

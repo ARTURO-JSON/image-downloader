@@ -8,6 +8,7 @@ export async function GET(request) {
     const response = await fetch(
       `https://api.themoviedb.org/3/movie/popular?api_key=${process.env.TMDB_API_KEY}&page=${page}`
     );
+     
 
     if (!response.ok) {
       throw new Error('Failed to fetch from TMDB');

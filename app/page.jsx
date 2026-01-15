@@ -160,15 +160,15 @@ export default function Home() {
             </Link>
             <Link
               href="/movies"
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+              className="text-gray-700 font-medium hover:text-primary-600 transition-colors"
             >
               Movies
             </Link>
             <Link
-              href="/design-assets"
-              className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+              href="/downloader"
+              className="text-gray-700 font-medium hover:text-primary-600 transition-colors"
             >
-              Design Assets
+              YouTube Video Downloader
             </Link>
           </div>
 
@@ -207,11 +207,11 @@ export default function Home() {
               Movies
             </Link>
             <Link
-              href="/design-assets"
+              href="/downloader"
               onClick={() => setMobileMenuOpen(false)}
               className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
             >
-              Design Assets
+              YouTube Video Downloader
             </Link>
           </div>
         )}

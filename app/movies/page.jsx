@@ -137,10 +137,10 @@ export default function MoviesPage() {
               Movies
             </Link>
             <Link
-              href="/design-assets"
+              href="/downloader"
               className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
             >
-              Design Assets
+              YouTube Video Downloader
             </Link>
           </div>
 
@@ -179,11 +179,11 @@ export default function MoviesPage() {
               Movies
             </Link>
             <Link
-              href="/design-assets"
+              href="/downloader"
               onClick={() => setMobileMenuOpen(false)}
               className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
             >
-              Design Assets
+              YouTube Video Downloader
             </Link>
           </div>
         )}

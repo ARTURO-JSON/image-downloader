@@ -33,15 +33,42 @@ export async function GET(request) {
     const encodedUrl = searchParams.get('url');  // Base64-encoded image URL (also URL-encoded)
     const imageId = searchParams.get('id');
     const source = searchParams.get('source') || 'unsplash';
+    const downloadLocation = searchParams.get('downloadLocation'); // For Unsplash download event
 
-    console.log('Download request received:', { encodedUrl: encodedUrl?.substring(0, 20), imageId, source });
+    console.log('=== Download Request ===');
+    console.log('Encoded URL length:', encodedUrl?.length);
+    console.log('Image ID:', imageId);
+    console.log('Source:', source);
+    console.log('Has download location:', !!downloadLocation);
 
     // Validate required parameters
     if (!encodedUrl) {
+      console.error('ERROR: No encoded URL provided');
       return NextResponse.json(
         { error: 'url parameter is required' },
         { status: 400 }
       );
+    }
+
+    // Trigger Unsplash download event if downloadLocation is provided
+    // This is required by Unsplash API for production use
+    if (source === 'unsplash' && downloadLocation) {
+      try {
+        const decodedDownloadLocation = decodeURIComponent(atob(downloadLocation));
+        console.log('Triggering Unsplash download event...');
+        
+        const triggerResponse = await fetch(decodedDownloadLocation, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+        });
+        
+        console.log('Unsplash download event triggered:', triggerResponse.ok);
+      } catch (triggerError) {
+        console.error('Failed to trigger Unsplash download event:', triggerError);
+        // Continue with download even if trigger fails
+      }
     }
 
     // Decode the Base64-encoded URL
@@ -49,7 +76,7 @@ export async function GET(request) {
     let imageUrl;
     try {
       imageUrl = atob(encodedUrl);
-      console.log('Successfully decoded URL');
+      console.log('Successfully decoded URL:', imageUrl.substring(0, 100));
     } catch (decodeError) {
       console.error('Failed to decode URL:', decodeError);
       return NextResponse.json(
@@ -60,21 +87,33 @@ export async function GET(request) {
 
     // SECURITY: Validate URL to prevent downloading from arbitrary sources
     const url = new URL(imageUrl);
+    // Pexels uses images.pexels.com domain
     const allowedHosts = ['images.unsplash.com', 'images.pexels.com'];
     
-    if (!allowedHosts.some(host => url.hostname === host)) {
+    const isAllowed = allowedHosts.some(host => url.hostname === host);
+    
+    console.log('URL validation:', { 
+      hostname: url.hostname, 
+      allowed: isAllowed,
+      fullUrl: imageUrl.substring(0, 100)
+    });
+    
+    if (!isAllowed) {
       return NextResponse.json(
-        { error: 'Invalid image source' },
+        { error: `Invalid image source: ${url.hostname}` },
         { status: 403 }
       );
     }
 
     // Fetch the image from the original source
     // Include User-Agent header to avoid being blocked by some servers
+    // Allow redirects (important for Pexels which may redirect)
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
       },
+      redirect: 'follow',  // Allow redirects for Pexels
     });
 
     // Handle fetch errors
@@ -87,7 +126,26 @@ export async function GET(request) {
     }
 
     // Convert image response to buffer for sending
-    const buffer = await imageResponse.arrayBuffer();
+    let buffer;
+    try {
+      buffer = await imageResponse.arrayBuffer();
+      console.log('Image buffer created, size:', buffer.byteLength, 'bytes');
+    } catch (bufferError) {
+      console.error('Failed to create buffer:', bufferError);
+      return NextResponse.json(
+        { error: 'Failed to process image' },
+        { status: 500 }
+      );
+    }
+    
+    // Validate buffer is not empty
+    if (!buffer || buffer.byteLength === 0) {
+      console.error('Image buffer is empty');
+      return NextResponse.json(
+        { error: 'Image data is empty' },
+        { status: 500 }
+      );
+    }
     
     // Get content type from response headers
     let contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
@@ -166,10 +224,15 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    console.error('Download error:', error);
+    console.error('=== Download Error ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error:', error);
+    
     return NextResponse.json(
       {
         error: error.message || 'Failed to download image',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }
     );

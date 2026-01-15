@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@distube/ytdl": "^2.0.6",
+    "@distube/ytdl-core": "^4.16.12",
     "autoprefixer": "^10.4.19",
     "axios": "^1.6.0",
     "file-saver": "^2.0.5",
@@ -20,6 +21,7 @@
     "postcss": "^8.4.38",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^3.4.3",
+    "ytdl-core": "^4.11.5"
   }
 }

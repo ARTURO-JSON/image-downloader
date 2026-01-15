@@ -304,29 +304,50 @@ export default function ContentDownloaderPage() {
               </div>
             )}
 
-            {videoInfo && detectedService === 'youtube' && (
+            {videoInfo && detectedService === 'youtube' && videoInfo.video && (
               <div className="mt-8 border-t pt-8">
+                {/* Show error if no playable formats */}
+                {videoInfo.success === false && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg mb-6">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-semibold">Limited availability</span>
+                    </div>
+                    <p className="mt-1 text-sm">{videoInfo.error || 'Some formats may not be available for this video.'}</p>
+                  </div>
+                )}
+                
                 <div className="mb-6 flex flex-col md:flex-row gap-6">
                   {/* Video Thumbnail Card */}
                   <div className="md:w-1/3">
                     <div className="rounded-lg overflow-hidden bg-gray-100 shadow-md">
                       <img
-                        src={`https://img.youtube.com/vi/${videoInfo.videoId}/maxresdefault.jpg`}
-                        alt={videoInfo.title}
+                        src={videoInfo.video.thumbnail || `https://img.youtube.com/vi/${videoInfo.video.id}/maxresdefault.jpg`}
+                        alt={videoInfo.video.title}
                         className="w-full aspect-video object-cover"
                         onError={(e) => {
-                          e.target.src = `https://img.youtube.com/vi/${videoInfo.videoId}/hqdefault.jpg`;
+                          e.target.src = `https://img.youtube.com/vi/${videoInfo.video.id}/hqdefault.jpg`;
                         }}
                       />
                     </div>
                     <div className="mt-4">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{videoInfo.title}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">{videoInfo.video.title}</h3>
+                      <p className="text-sm text-gray-600 mb-2">by {videoInfo.video.author}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
                           </svg>
-                          {Math.floor(videoInfo.duration / 60)} min
+                          {Math.floor(videoInfo.video.length / 60)} min
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                          </svg>
+                          {formatNumber(videoInfo.video.views)} views
                         </div>
                       </div>
                     </div>
@@ -337,55 +358,101 @@ export default function ContentDownloaderPage() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Select Quality</label>
-                        <select
-                          value={selectedFormat ? `${selectedFormat.itag}-${selectedFormat.type}` : ''}
-                          onChange={(e) => {
-                            if (!e.target.value) {
-                              setSelectedFormat(null);
-                              return;
-                            }
-                            const [itag, type] = e.target.value.split('-');
-                            if (type === 'mp3') {
-                              setSelectedFormat({ quality: 'audio', label: 'Audio Only', itag: '251', type: 'mp3' });
-                            } else {
-                              const format = formatOptions.find(f => f.itag === itag);
-                              setSelectedFormat({ ...format, type: 'mp4' });
-                            }
-                          }}
-                          className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
-                        >
-                          <option value="">Choose a format...</option>
-                          <optgroup label="Video Formats">
-                            {formatOptions.map((format) => (
-                              <option key={format.itag} value={`${format.itag}-mp4`}>
-                                {format.label} - MP4
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="Audio">
-                            <option value="251-mp3">Audio Only - MP3</option>
-                          </optgroup>
-                        </select>
+                        {/* Show available formats from API */}
+                        {videoInfo.formats && (videoInfo.formats.video?.length > 0 || videoInfo.formats.audio?.length > 0) ? (
+                          <select
+                            value={selectedFormat ? `${selectedFormat.itag}-${selectedFormat.type}` : ''}
+                            onChange={(e) => {
+                              if (!e.target.value) {
+                                setSelectedFormat(null);
+                                return;
+                              }
+                              const [itag, type] = e.target.value.split('-');
+                              if (type === 'audio') {
+                                const audioFormat = videoInfo.formats.audio?.find(f => f.itag.toString() === itag);
+                                setSelectedFormat({ 
+                                  quality: audioFormat?.quality || 'audio', 
+                                  label: `Audio ${audioFormat?.quality || ''}`, 
+                                  itag: itag, 
+                                  type: 'audio' 
+                                });
+                              } else {
+                                const videoFormat = videoInfo.formats.video?.find(f => f.itag.toString() === itag);
+                                setSelectedFormat({ 
+                                  quality: videoFormat?.resolution || videoFormat?.quality, 
+                                  label: videoFormat?.resolution || 'Video', 
+                                  itag: itag, 
+                                  type: 'video' 
+                                });
+                              }
+                            }}
+                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-medium"
+                          >
+                            <option value="">Choose a format...</option>
+                            {videoInfo.formats.video?.length > 0 && (
+                              <optgroup label="Video Formats (with audio)">
+                                {videoInfo.formats.video.map((format, idx) => (
+                                  <option key={`video-${format.itag}-${idx}`} value={`${format.itag}-video`}>
+                                    {format.resolution || format.quality} - MP4 {format.hasAudio ? '(with audio)' : ''}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {videoInfo.formats.audio?.length > 0 && (
+                              <optgroup label="Audio Only">
+                                {videoInfo.formats.audio.map((format, idx) => (
+                                  <option key={`audio-${format.itag}-${idx}`} value={`${format.itag}-audio`}>
+                                    {format.quality} - {format.mimeType?.split(';')[0] || 'Audio'}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
+                        ) : (
+                          <div className="p-4 bg-gray-100 rounded-lg text-gray-600 text-center">
+                            No downloadable formats available for this video
+                          </div>
+                        )}
                       </div>
 
                       {selectedFormat && (
                         <button
-                          onClick={() => {
-                            // Trigger download - server will send file with Content-Disposition: attachment
-                            window.location.href = `/api/content/youtube?url=${encodeURIComponent(url)}&itag=${selectedFormat.itag}`;
+                          onClick={async () => {
+                            try {
+                              // First get the download URL from our API
+                              const response = await fetch(`/api/content/youtube?url=${encodeURIComponent(url)}&itag=${selectedFormat.itag}`);
+                              const data = await response.json();
+                              
+                              if (data.success && data.downloadUrl) {
+                                // Open the actual download URL in a new tab
+                                window.open(data.downloadUrl, '_blank');
+                              } else {
+                                setError(data.error || 'Failed to get download URL');
+                              }
+                            } catch (err) {
+                              setError('Failed to start download: ' + err.message);
+                            }
                           }}
                           className="w-full px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-semibold flex items-center justify-center gap-2"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
-                          Download {selectedFormat.type === 'mp3' ? 'Audio' : 'Video'}
+                          Download {selectedFormat.type === 'audio' ? 'Audio' : 'Video'}
                         </button>
                       )}
                       {selectedFormat && (
                         <p className="text-xs text-gray-500 mt-2 text-center">
-                          ⏳ Download will start automatically. Large files may take a moment.
+                          ⏳ Download will open in a new tab. Large files may take a moment.
                         </p>
+                      )}
+                      {/* Show available resolutions info */}
+                      {videoInfo.availableResolutions?.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-xs text-blue-700">
+                            <strong>Available qualities:</strong> {videoInfo.availableResolutions.join(', ')}
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>

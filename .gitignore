@@ -7,7 +7,7 @@
 
 # testing
 /coverage
-
+/admin-dashboard
 # next.js
 /.next/
 /out/

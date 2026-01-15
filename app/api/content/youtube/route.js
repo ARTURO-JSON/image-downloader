@@ -1,12 +1,49 @@
 import { NextResponse } from 'next/server';
+import ytdl from '@distube/ytdl-core';
 
 /**
  * YouTube Video Download Endpoint
- * Uses RapidAPI for reliable YouTube downloading
+ * Uses @distube/ytdl-core for YouTube video downloading (no external API required)
  */
+
+// Helper function to validate YouTube URL
+function isValidYouTubeUrl(url) {
+  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)[\w-]+/;
+  return pattern.test(url);
+}
+
+// Helper function to extract video ID
+function extractVideoId(url) {
+  try {
+    // Handle youtu.be links
+    if (url.includes('youtu.be/')) {
+      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      return match ? match[1] : null;
+    }
+    
+    // Handle YouTube shorts
+    if (url.includes('/shorts/')) {
+      const match = url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+      return match ? match[1] : null;
+    }
+    
+    // Handle youtube.com links
+    const urlObj = new URL(url);
+    return urlObj.searchParams.get('v') || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper function to filter formats with valid URLs
+function getPlayableFormats(formats) {
+  return formats.filter(f => f.url && f.url.length > 0);
+}
+
+// POST endpoint for getting video info and download URLs
 export async function POST(request) {
   try {
-    const { url } = await request.json();
+    const { url, resolution } = await request.json();
 
     if (!url) {
       return NextResponse.json(
@@ -15,283 +52,261 @@ export async function POST(request) {
       );
     }
 
-    // Validate YouTube URL
-    if (!url.includes('youtube') && !url.includes('youtu.be')) {
+    if (!isValidYouTubeUrl(url) && !ytdl.validateURL(url)) {
       return NextResponse.json(
         { error: 'Invalid YouTube URL' },
         { status: 400 }
       );
     }
 
-    // Check for RapidAPI key
-    if (!process.env.RAPIDAPI_KEY) {
-      return NextResponse.json(
-        { 
-          error: 'YouTube download service not configured. Please add RAPIDAPI_KEY to .env.local',
-          isDemo: true,
-          demoData: {
-            success: true,
-            videoId: 'dQw4w9WgXcQ',
-            title: 'YouTube Video Title',
-            duration: 213,
-            formats: [
-              { quality: '4K (2160p)', format: 'mp4', itag: '313' },
-              { quality: '1440p (2K)', format: 'mp4', itag: '271' },
-              { quality: '1080p (Full HD)', format: 'mp4', itag: '18' },
-              { quality: '720p (HD)', format: 'mp4', itag: '22' },
-              { quality: '480p (SD)', format: 'mp4', itag: '135' },
-            ],
-          }
-        },
-        { status: 200 }
-      );
-    }
+    console.log('[YouTube API] Processing URL:', url);
+    console.log('[YouTube API] Requested resolution:', resolution);
 
-    // Call RapidAPI YouTube downloader
-    const options = {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-        'x-rapidapi-host': process.env.RAPIDAPI_HOST || 'youtube-media-downloader.p.rapidapi.com'
-      }
-    };
+    // Get video info using ytdl-core
+    const info = await ytdl.getInfo(url);
+    const videoDetails = info.videoDetails;
 
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      return NextResponse.json(
-        { error: 'Could not extract video ID from URL' },
-        { status: 400 }
-      );
-    }
-
-    const response = await fetch(
-      `https://${process.env.RAPIDAPI_HOST}/v2/video/details?videoId=${videoId}`,
-      options
-    );
-
-    if (!response.ok) {
-      console.error('RapidAPI response:', response.status, response.statusText);
-      return NextResponse.json(
-        { error: 'Could not access this video. It may be private, age-restricted, or unavailable.' },
-        { status: 400 }
-      );
-    }
-
-    const data = await response.json();
-
-    // Parse RapidAPI response
-    if (!data || data.errorId !== 'Success' || !data.title) {
-      return NextResponse.json(
-        { error: 'Could not fetch video information' },
-        { status: 400 }
-      );
-    }
-
-    // Format the response - parse videos and audios from API
-    const formats = [];
+    // Get available formats - only include those with valid URLs
+    const allFormats = getPlayableFormats(info.formats);
     
-    // Add video formats if available
-    if (data.videos && data.videos.items && Array.isArray(data.videos.items)) {
-      data.videos.items.forEach(video => {
-        if (video.quality || video.qualityLabel) {
-          formats.push({
-            quality: video.qualityLabel || video.quality,
-            format: video.extension || 'mp4',
-            itag: video.itag || video.id,
-            url: video.url
-          });
-        }
+    if (allFormats.length === 0) {
+      console.log('[YouTube API] No playable formats found, trying alternative methods');
+      // Return basic info even if no playable formats
+      return NextResponse.json({
+        success: false,
+        error: 'No playable formats available. YouTube may be blocking this video.',
+        video: {
+          id: videoDetails.videoId,
+          title: videoDetails.title,
+          author: videoDetails.author.name,
+          channelUrl: videoDetails.author.channel_url,
+          length: parseInt(videoDetails.lengthSeconds),
+          views: parseInt(videoDetails.viewCount),
+          description: videoDetails.description?.substring(0, 500),
+          publishDate: videoDetails.publishDate,
+          thumbnail: videoDetails.thumbnails[videoDetails.thumbnails.length - 1]?.url,
+        },
+        formats: { video: [], audio: [] },
+        availableResolutions: [],
+        selectedFormat: null,
       });
     }
 
-    // Add audio formats
-    if (data.audios && data.audios.items && Array.isArray(data.audios.items)) {
-      const audioItem = data.audios.items[0];
-      if (audioItem) {
-        formats.push({
-          quality: 'Audio Only',
-          format: audioItem.extension || 'mp3',
-          itag: audioItem.itag || '251',
-          url: audioItem.url
-        });
+    const progressiveFormats = allFormats
+      .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4')
+      .map(f => ({
+        quality: f.qualityLabel || f.quality,
+        resolution: f.qualityLabel,
+        itag: f.itag,
+        mimeType: f.mimeType,
+        hasAudio: f.hasAudio,
+        hasVideo: f.hasVideo,
+        url: f.url,
+        contentLength: f.contentLength,
+      }))
+      .sort((a, b) => {
+        // Sort by quality (highest first)
+        const aRes = parseInt(a.resolution) || 0;
+        const bRes = parseInt(b.resolution) || 0;
+        return bRes - aRes;
+      });
+
+    // Get audio-only formats for MP3 conversion
+    const audioFormats = allFormats
+      .filter(f => f.hasAudio && !f.hasVideo)
+      .map(f => ({
+        quality: `${f.audioBitrate}kbps`,
+        audioBitrate: f.audioBitrate,
+        itag: f.itag,
+        mimeType: f.mimeType,
+        url: f.url,
+        contentLength: f.contentLength,
+      }))
+      .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
+
+    // Get unique resolutions
+    const availableResolutions = [...new Set(
+      progressiveFormats
+        .filter(f => f.resolution)
+        .map(f => f.resolution)
+    )];
+
+    // If a specific resolution is requested, find the download URL
+    let selectedFormat = null;
+    if (resolution) {
+      selectedFormat = progressiveFormats.find(f => 
+        f.resolution === resolution || 
+        f.resolution === `${resolution}p`
+      );
+      
+      // If exact match not found, get the closest available
+      if (!selectedFormat && progressiveFormats.length > 0) {
+        selectedFormat = progressiveFormats[0]; // Highest quality available
       }
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        videoId: data.id || videoId,
-        title: data.title,
-        duration: data.lengthSeconds || 0,
-        thumbnail: data.thumbnails && data.thumbnails.length > 0 ? data.thumbnails[data.thumbnails.length - 1].url : null,
-        formats: formats.length > 0 ? formats : [
-          { quality: '720p', format: 'mp4', itag: '22' },
-          { quality: 'Audio Only', format: 'mp3', itag: '251' }
-        ],
-        downloadUrl: `/api/content/youtube/download?url=${encodeURIComponent(url)}`,
+    // Response
+    return NextResponse.json({
+      success: true,
+      video: {
+        id: videoDetails.videoId,
+        title: videoDetails.title,
+        author: videoDetails.author.name,
+        channelUrl: videoDetails.author.channel_url,
+        length: parseInt(videoDetails.lengthSeconds),
+        views: parseInt(videoDetails.viewCount),
+        description: videoDetails.description?.substring(0, 500),
+        publishDate: videoDetails.publishDate,
+        thumbnail: videoDetails.thumbnails[videoDetails.thumbnails.length - 1]?.url,
       },
-      { status: 200 }
-    );
+      formats: {
+        video: progressiveFormats.slice(0, 6), // Limit to top 6 qualities
+        audio: audioFormats.slice(0, 3), // Top 3 audio qualities
+      },
+      availableResolutions,
+      selectedFormat: selectedFormat ? {
+        resolution: selectedFormat.resolution,
+        downloadUrl: selectedFormat.url,
+        contentLength: selectedFormat.contentLength,
+        itag: selectedFormat.itag,
+      } : null,
+    });
   } catch (error) {
-    console.error('YouTube API error:', error);
+    console.error('[YouTube API] POST Error:', error.message);
     return NextResponse.json(
-      { error: 'Failed to fetch video information. Please try again.' },
+      { error: error.message || 'Failed to get video information' },
       { status: 500 }
     );
   }
 }
 
-/**
- * Extract video ID from YouTube URL
- */
-function extractVideoId(url) {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
-  return match ? match[1] : null;
-}
-
-/**
- * GET endpoint for downloading videos
- */
+// GET endpoint for downloading video or getting info
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const url = searchParams.get('url');
+    const action = searchParams.get('action') || 'info';
     const itag = searchParams.get('itag');
 
+    // Return API info if no URL provided
     if (!url) {
       return NextResponse.json({
-        message: 'YouTube download API endpoint',
-        methods: ['POST', 'GET'],
-        description: 'POST: Get video info and available formats. GET: Download video',
-        examplePost: {
-          url: 'https://www.youtube.com/watch?v=...',
+        message: 'YouTube Download API',
+        endpoints: {
+          'POST /api/content/youtube': {
+            description: 'Get video info and download URLs',
+            body: { url: 'YouTube URL', resolution: '720p (optional)' },
+          },
+          'GET /api/content/youtube?url=...&action=info': {
+            description: 'Get video information',
+          },
+          'GET /api/content/youtube?url=...&action=resolutions': {
+            description: 'Get available resolutions',
+          },
+          'GET /api/content/youtube?url=...&itag=18': {
+            description: 'Stream video by itag',
+          },
         },
       });
     }
 
-    // Validate YouTube URL
-    if (!url.includes('youtube') && !url.includes('youtu.be')) {
+    if (!isValidYouTubeUrl(url) && !ytdl.validateURL(url)) {
       return NextResponse.json(
         { error: 'Invalid YouTube URL' },
         { status: 400 }
       );
     }
 
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      return NextResponse.json(
-        { error: 'Could not extract video ID' },
-        { status: 400 }
-      );
+    // Get video info
+    const info = await ytdl.getInfo(url);
+    const playableFormats = getPlayableFormats(info.formats);
+
+    // Action: resolutions - Get available resolutions only
+    if (action === 'resolutions') {
+      const progressiveResolutions = [...new Set(
+        playableFormats
+          .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4' && f.qualityLabel)
+          .map(f => f.qualityLabel)
+      )].sort();
+
+      const allResolutions = [...new Set(
+        playableFormats
+          .filter(f => f.container === 'mp4' && f.qualityLabel)
+          .map(f => f.qualityLabel)
+      )].sort();
+
+      return NextResponse.json({
+        success: true,
+        progressive: progressiveResolutions,
+        all: allResolutions,
+      });
     }
 
-    // Get video details from RapidAPI
-    const options = {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-key': process.env.RAPIDAPI_KEY,
-        'x-rapidapi-host': process.env.RAPIDAPI_HOST || 'youtube-media-downloader.p.rapidapi.com'
+    // Action: download/stream by itag
+    if (itag) {
+      const format = playableFormats.find(f => f.itag === parseInt(itag));
+      
+      if (!format || !format.url) {
+        // Try to find any playable format as fallback
+        const fallbackFormat = playableFormats.find(f => f.hasVideo && f.hasAudio && f.container === 'mp4');
+        
+        if (fallbackFormat && fallbackFormat.url) {
+          console.log('[YouTube API] Requested itag not available, using fallback:', fallbackFormat.itag);
+          return NextResponse.json({
+            success: true,
+            downloadUrl: fallbackFormat.url,
+            quality: fallbackFormat.qualityLabel || 'auto',
+            mimeType: fallbackFormat.mimeType,
+            contentLength: fallbackFormat.contentLength,
+            note: `Requested quality not available. Using ${fallbackFormat.qualityLabel || 'best available'} instead.`,
+          });
+        }
+        
+        return NextResponse.json(
+          { error: 'Failed to find any playable formats. YouTube may be blocking this video.' },
+          { status: 400 }
+        );
       }
-    };
 
-    const response = await fetch(
-      `https://${process.env.RAPIDAPI_HOST}/v2/video/details?videoId=${videoId}`,
-      options
-    );
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Could not fetch download link' },
-        { status: 400 }
-      );
+      // Return the direct download URL
+      return NextResponse.json({
+        success: true,
+        downloadUrl: format.url,
+        quality: format.qualityLabel,
+        mimeType: format.mimeType,
+        contentLength: format.contentLength,
+      });
     }
 
-    const data = await response.json();
-
-    if (!data || data.errorId !== 'Success') {
-      return NextResponse.json(
-        { error: 'No download formats available' },
-        { status: 400 }
-      );
-    }
-
-    // Find the requested format by itag
-    let downloadUrl = null;
-    let extension = 'mp4';
+    // Default action: info
+    const videoDetails = info.videoDetails;
     
-    // Check videos first
-    if (data.videos && data.videos.items) {
-      const video = data.videos.items.find(v => String(v.itag) === String(itag));
-      if (video) {
-        downloadUrl = video.url;
-        extension = video.extension || 'mp4';
-      }
-    }
-    
-    // Check audios if not found in videos
-    if (!downloadUrl && data.audios && data.audios.items) {
-      const audio = data.audios.items.find(a => String(a.itag) === String(itag));
-      if (audio) {
-        downloadUrl = audio.url;
-        extension = audio.extension || 'mp3';
-      }
-      // If no specific itag, use first audio
-      if (!downloadUrl && itag === '251') {
-        downloadUrl = data.audios.items[0]?.url;
-        extension = data.audios.items[0]?.extension || 'mp3';
-      }
-    }
+    const formats = playableFormats
+      .filter(f => f.hasVideo && f.hasAudio && f.container === 'mp4')
+      .map(f => ({
+        quality: f.qualityLabel,
+        itag: f.itag,
+        mimeType: f.mimeType,
+        url: f.url,
+      }))
+      .slice(0, 6);
 
-    // Fallback to first available video
-    if (!downloadUrl && data.videos && data.videos.items && data.videos.items.length > 0) {
-      downloadUrl = data.videos.items[0].url;
-      extension = data.videos.items[0].extension || 'mp4';
-    }
-
-    if (!downloadUrl) {
-      return NextResponse.json(
-        { error: 'Download URL not found for selected format' },
-        { status: 400 }
-      );
-    }
-
-    // Create safe filename from video title
-    const safeTitle = (data.title || 'youtube_video')
-      .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 100);
-    const filename = `${safeTitle}.${extension}`;
-
-    // Fetch the video and stream it with download headers
-    const videoResponse = await fetch(downloadUrl);
-    
-    if (!videoResponse.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch video file' },
-        { status: 400 }
-      );
-    }
-
-    // Get the content type and length
-    const contentType = videoResponse.headers.get('content-type') || (extension === 'mp3' ? 'audio/mpeg' : 'video/mp4');
-    const contentLength = videoResponse.headers.get('content-length');
-
-    // Create response with download headers
-    const headers = new Headers();
-    headers.set('Content-Type', contentType);
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`);
-    if (contentLength) {
-      headers.set('Content-Length', contentLength);
-    }
-
-    return new NextResponse(videoResponse.body, {
-      status: 200,
-      headers
+    return NextResponse.json({
+      success: true,
+      video: {
+        id: videoDetails.videoId,
+        title: videoDetails.title,
+        author: videoDetails.author.name,
+        length: parseInt(videoDetails.lengthSeconds),
+        views: parseInt(videoDetails.viewCount),
+        thumbnail: videoDetails.thumbnails[videoDetails.thumbnails.length - 1]?.url,
+      },
+      formats,
     });
   } catch (error) {
-    console.error('YouTube download error:', error);
+    console.error('[YouTube API] GET Error:', error.message);
     return NextResponse.json(
-      { error: 'Failed to download video' },
+      { error: error.message || 'Failed to get video information' },
       { status: 500 }
     );
   }
